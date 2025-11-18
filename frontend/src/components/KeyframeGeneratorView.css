@@ -1,0 +1,507 @@
+.keyframe-generator-view {
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
+.keyframe-generator-view .header {
+  background: white;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.keyframe-generator-view .header h1 {
+  flex: 1;
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.keyframe-generator-view .header-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.keyframe-generator-view .content-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr 350px;
+  gap: 1rem;
+  padding: 1rem;
+  height: calc(100vh - 80px);
+}
+
+/* Left Panel: Shot List */
+.keyframe-generator-view .left-panel {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.keyframe-generator-view .panel-header {
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.keyframe-generator-view .panel-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.keyframe-generator-view .shot-count {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.keyframe-generator-view .shot-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.keyframe-generator-view .shot-item {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.keyframe-generator-view .shot-item:hover {
+  background: #f5f5f5;
+}
+
+.keyframe-generator-view .shot-item.active {
+  background: #e3f2fd;
+  border-color: #2196f3;
+}
+
+.keyframe-generator-view .shot-thumbnail {
+  width: 80px;
+  height: 80px;
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.keyframe-generator-view .shot-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.keyframe-generator-view .no-thumbnail {
+  font-size: 0.8rem;
+  color: #999;
+  text-align: center;
+}
+
+.keyframe-generator-view .shot-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.keyframe-generator-view .shot-info h3 {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.keyframe-generator-view .shot-description {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.85rem;
+  color: #666;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.keyframe-generator-view .shot-meta {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: #999;
+}
+
+.keyframe-generator-view .selected-indicator {
+  color: #4caf50;
+  font-weight: 600;
+}
+
+/* Center Panel: Preview */
+.keyframe-generator-view .center-panel {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.keyframe-generator-view .shot-details-card {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f9f9f9;
+  border-radius: 6px;
+}
+
+.keyframe-generator-view .shot-details-card h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.2rem;
+}
+
+.keyframe-generator-view .shot-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.keyframe-generator-view .shot-details-grid p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.keyframe-generator-view .keyframe-preview-section {
+  margin-bottom: 1.5rem;
+}
+
+.keyframe-generator-view .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.keyframe-generator-view .section-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.keyframe-generator-view .keyframe-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.keyframe-generator-view .keyframe-card {
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+}
+
+.keyframe-generator-view .keyframe-card:hover {
+  border-color: #2196f3;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.keyframe-generator-view .keyframe-card.selected {
+  border-color: #4caf50;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.keyframe-generator-view .keyframe-image-wrapper {
+  position: relative;
+  width: 100%;
+  padding-top: 100%;
+  background: #f0f0f0;
+}
+
+.keyframe-generator-view .keyframe-image-wrapper img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.keyframe-generator-view .selected-badge {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: #4caf50;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.keyframe-generator-view .keyframe-info {
+  padding: 0.75rem;
+}
+
+.keyframe-generator-view .keyframe-version {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.keyframe-generator-view .keyframe-params {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.keyframe-generator-view .keyframe-date {
+  font-size: 0.75rem;
+  color: #999;
+}
+
+.keyframe-generator-view .btn-select {
+  width: 100%;
+  padding: 0.5rem;
+  background: #2196f3;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.keyframe-generator-view .btn-select:hover {
+  background: #1976d2;
+}
+
+.keyframe-generator-view .generation-progress {
+  padding: 1rem;
+  background: #e3f2fd;
+  border-radius: 6px;
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.keyframe-generator-view .progress-message {
+  font-weight: 600;
+  color: #1976d2;
+}
+
+/* Right Panel: Parameters */
+.keyframe-generator-view .right-panel {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.keyframe-generator-view .param-section {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.keyframe-generator-view .param-section:last-child {
+  border-bottom: none;
+}
+
+.keyframe-generator-view .param-section h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.keyframe-generator-view .auto-prompt-section {
+  margin-bottom: 1rem;
+}
+
+.keyframe-generator-view .auto-prompt-display {
+  padding: 0.75rem;
+  background: #f5f5f5;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+  max-height: 100px;
+  overflow-y: auto;
+}
+
+.keyframe-generator-view .loading-prompt {
+  padding: 0.75rem;
+  text-align: center;
+  color: #999;
+  font-style: italic;
+}
+
+.keyframe-generator-view .form-group {
+  margin-bottom: 1rem;
+}
+
+.keyframe-generator-view .form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.keyframe-generator-view .form-group input,
+.keyframe-generator-view .form-group select,
+.keyframe-generator-view .form-group textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.keyframe-generator-view .form-group textarea {
+  resize: vertical;
+}
+
+.keyframe-generator-view .generate-section {
+  margin-top: 1.5rem;
+}
+
+.keyframe-generator-view .btn-large {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.keyframe-generator-view .hint {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #666;
+  text-align: center;
+}
+
+/* Status Badges */
+.keyframe-generator-view .status-badge {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.keyframe-generator-view .status-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.keyframe-generator-view .status-processing {
+  background: #cce5ff;
+  color: #004085;
+}
+
+.keyframe-generator-view .status-completed {
+  background: #d4edda;
+  color: #155724;
+}
+
+.keyframe-generator-view .status-failed {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+/* Modal */
+.keyframe-generator-view .keyframe-detail-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin: 1rem 0;
+}
+
+.keyframe-generator-view .keyframe-detail-image {
+  width: 100%;
+}
+
+.keyframe-generator-view .keyframe-detail-image img {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+.keyframe-generator-view .keyframe-detail-info {
+  overflow-y: auto;
+}
+
+.keyframe-generator-view .info-group {
+  margin-bottom: 1.5rem;
+}
+
+.keyframe-generator-view .info-group h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.keyframe-generator-view .info-group p {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.keyframe-generator-view .prompt-text {
+  padding: 0.75rem;
+  background: #f5f5f5;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Empty State */
+.keyframe-generator-view .empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #999;
+}
+
+.keyframe-generator-view .empty-state p {
+  margin: 0.5rem 0;
+}
+
+.keyframe-generator-view .empty-state button {
+  margin-top: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 1400px) {
+  .keyframe-generator-view .content-layout {
+    grid-template-columns: 280px 1fr 320px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .keyframe-generator-view .content-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .keyframe-generator-view .left-panel {
+    max-height: 300px;
+  }
+
+  .keyframe-generator-view .right-panel {
+    position: fixed;
+    right: 0;
+    top: 80px;
+    bottom: 0;
+    width: 350px;
+    z-index: 100;
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+  }
+}

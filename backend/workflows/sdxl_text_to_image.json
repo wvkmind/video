@@ -1,0 +1,158 @@
+{
+  "name": "sdxl_t2i_basic",
+  "displayName": "SDXL 文生图（基础）",
+  "type": "text_to_image",
+  "isActive": true,
+  "workflowJSON": {
+    "1": {
+      "class_type": "CheckpointLoaderSimple",
+      "inputs": {
+        "ckpt_name": "sd_xl_base_1.0.safetensors"
+      }
+    },
+    "2": {
+      "class_type": "CLIPTextEncode",
+      "inputs": {
+        "text": "{{prompt}}",
+        "clip": ["1", 1]
+      }
+    },
+    "3": {
+      "class_type": "CLIPTextEncode",
+      "inputs": {
+        "text": "{{negative_prompt}}",
+        "clip": ["1", 1]
+      }
+    },
+    "4": {
+      "class_type": "EmptyLatentImage",
+      "inputs": {
+        "width": "{{width}}",
+        "height": "{{height}}",
+        "batch_size": 1
+      }
+    },
+    "5": {
+      "class_type": "KSampler",
+      "inputs": {
+        "seed": "{{seed}}",
+        "steps": "{{steps}}",
+        "cfg": "{{cfg}}",
+        "sampler_name": "{{sampler}}",
+        "scheduler": "normal",
+        "denoise": 1.0,
+        "model": ["1", 0],
+        "positive": ["2", 0],
+        "negative": ["3", 0],
+        "latent_image": ["4", 0]
+      }
+    },
+    "6": {
+      "class_type": "VAEDecode",
+      "inputs": {
+        "samples": ["5", 0],
+        "vae": ["1", 2]
+      }
+    },
+    "7": {
+      "class_type": "SaveImage",
+      "inputs": {
+        "filename_prefix": "keyframe",
+        "images": ["6", 0]
+      }
+    }
+  },
+  "parameters": [
+    {
+      "name": "prompt",
+      "displayName": "正向提示词",
+      "type": "string",
+      "defaultValue": "",
+      "nodeId": "2",
+      "fieldPath": "inputs.text"
+    },
+    {
+      "name": "negative_prompt",
+      "displayName": "负向提示词",
+      "type": "string",
+      "defaultValue": "blurry, low quality, distorted, ugly",
+      "nodeId": "3",
+      "fieldPath": "inputs.text"
+    },
+    {
+      "name": "width",
+      "displayName": "宽度",
+      "type": "number",
+      "defaultValue": 1024,
+      "min": 512,
+      "max": 2048,
+      "step": 64,
+      "nodeId": "4",
+      "fieldPath": "inputs.width"
+    },
+    {
+      "name": "height",
+      "displayName": "高度",
+      "type": "number",
+      "defaultValue": 1024,
+      "min": 512,
+      "max": 2048,
+      "step": 64,
+      "nodeId": "4",
+      "fieldPath": "inputs.height"
+    },
+    {
+      "name": "steps",
+      "displayName": "采样步数",
+      "type": "number",
+      "defaultValue": 30,
+      "min": 1,
+      "max": 150,
+      "step": 1,
+      "nodeId": "5",
+      "fieldPath": "inputs.steps"
+    },
+    {
+      "name": "cfg",
+      "displayName": "CFG Scale",
+      "type": "number",
+      "defaultValue": 7.5,
+      "min": 1.0,
+      "max": 20.0,
+      "step": 0.5,
+      "nodeId": "5",
+      "fieldPath": "inputs.cfg"
+    },
+    {
+      "name": "sampler",
+      "displayName": "采样器",
+      "type": "select",
+      "defaultValue": "dpmpp_2m",
+      "options": [
+        "euler",
+        "euler_ancestral",
+        "heun",
+        "dpm_2",
+        "dpm_2_ancestral",
+        "lms",
+        "dpmpp_2s_ancestral",
+        "dpmpp_2m",
+        "dpmpp_sde",
+        "ddim"
+      ],
+      "nodeId": "5",
+      "fieldPath": "inputs.sampler_name"
+    },
+    {
+      "name": "seed",
+      "displayName": "随机种子",
+      "type": "number",
+      "defaultValue": -1,
+      "min": -1,
+      "max": 2147483647,
+      "step": 1,
+      "nodeId": "5",
+      "fieldPath": "inputs.seed"
+    }
+  ]
+}

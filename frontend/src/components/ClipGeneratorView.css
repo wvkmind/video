@@ -1,0 +1,386 @@
+.clip-generator-view {
+  display: flex;
+  height: 100%;
+  background: #f5f5f5;
+}
+
+.clip-generator-sidebar {
+  width: 300px;
+  background: white;
+  border-right: 1px solid #e0e0e0;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.clip-generator-sidebar h3 {
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.shot-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.shot-item {
+  padding: 15px;
+  background: #f9f9f9;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.shot-item:hover {
+  background: #f0f0f0;
+  border-color: #e0e0e0;
+}
+
+.shot-item.selected {
+  background: #e3f2fd;
+  border-color: #2196f3;
+}
+
+.shot-number {
+  font-weight: bold;
+  color: #2196f3;
+  margin-bottom: 5px;
+}
+
+.shot-description {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.shot-status {
+  font-size: 12px;
+  color: #4caf50;
+  margin-top: 5px;
+}
+
+.shot-status.clip-ready {
+  color: #ff9800;
+  font-weight: bold;
+}
+
+.clip-generator-main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 30px;
+}
+
+.clip-generator-header {
+  margin-bottom: 30px;
+}
+
+.clip-generator-header h2 {
+  margin: 0 0 10px 0;
+  color: #333;
+}
+
+.shot-info {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  color: #666;
+}
+
+.shot-info p {
+  margin: 0;
+  flex: 1;
+}
+
+.shot-info span {
+  padding: 5px 10px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.clip-generator-content {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 30px;
+}
+
+.generation-controls {
+  background: white;
+  padding: 25px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  height: fit-content;
+}
+
+.generation-controls h3 {
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.control-group {
+  margin-bottom: 20px;
+}
+
+.control-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #555;
+}
+
+.control-group input[type="range"] {
+  width: 100%;
+}
+
+.control-group input[type="number"] {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.radio-group {
+  display: flex;
+  gap: 15px;
+}
+
+.radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: normal;
+}
+
+.generate-button {
+  width: 100%;
+  padding: 12px;
+  background: #2196f3;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.generate-button:hover:not(:disabled) {
+  background: #1976d2;
+}
+
+.generate-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.clip-preview-section {
+  background: white;
+  padding: 25px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.clip-preview-section h3 {
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.clip-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.clip-card {
+  background: #f9f9f9;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.clip-card.selected {
+  border-color: #ff9800;
+  box-shadow: 0 4px 8px rgba(255, 152, 0, 0.2);
+}
+
+.clip-video {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  background: #000;
+}
+
+.clip-info {
+  padding: 15px;
+}
+
+.clip-status {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.clip-date {
+  font-size: 12px;
+  color: #999;
+}
+
+.clip-actions {
+  padding: 0 15px 15px 15px;
+}
+
+.clip-actions button {
+  width: 100%;
+  padding: 8px;
+  background: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.clip-actions button:hover {
+  background: #45a049;
+}
+
+.selected-badge {
+  display: inline-block;
+  width: 100%;
+  padding: 8px;
+  background: #ff9800;
+  color: white;
+  text-align: center;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.keyframe-reference-section {
+  grid-column: 1 / -1;
+  background: white;
+  padding: 25px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
+}
+
+.keyframe-reference-section h3 {
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.keyframe-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+.keyframe-card {
+  position: relative;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.keyframe-card.selected {
+  border-color: #4caf50;
+}
+
+.keyframe-card img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+}
+
+.keyframe-card .selected-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #999;
+}
+
+.empty-state p {
+  margin: 10px 0;
+  font-size: 16px;
+}
+
+.loading {
+  text-align: center;
+  padding: 20px;
+  color: #999;
+}
+
+.compare-button {
+  padding: 8px 16px;
+  background: #9c27b0;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.compare-button:hover {
+  background: #7b1fa2;
+}
+
+.compare-view {
+  background: #f0f0f0;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.compare-item {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.clip-card.comparing {
+  border-color: #9c27b0;
+  box-shadow: 0 4px 8px rgba(156, 39, 176, 0.3);
+}
+
+.compare-select-button {
+  width: 100%;
+  padding: 8px;
+  background: #9c27b0;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.compare-select-button:hover:not(:disabled) {
+  background: #7b1fa2;
+}
+
+.compare-select-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.control-group label input[type="checkbox"] {
+  margin-right: 8px;
+}

@@ -1,0 +1,184 @@
+{
+  "name": "svd_i2v_basic",
+  "displayName": "SVD 图生视频（基础）",
+  "type": "image_to_video",
+  "isActive": true,
+  "workflowJSON": {
+    "1": {
+      "class_type": "LoadImage",
+      "inputs": {
+        "image": "{{keyframe_image}}"
+      }
+    },
+    "2": {
+      "class_type": "ImageOnlyCheckpointLoader",
+      "inputs": {
+        "ckpt_name": "svd_xt_1_1.safetensors"
+      }
+    },
+    "3": {
+      "class_type": "SVD_img2vid_Conditioning",
+      "inputs": {
+        "width": "{{width}}",
+        "height": "{{height}}",
+        "video_frames": "{{num_frames}}",
+        "motion_bucket_id": "{{motion_bucket_id}}",
+        "fps": "{{fps}}",
+        "augmentation_level": 0.0,
+        "clip_vision": ["2", 1],
+        "init_image": ["1", 0],
+        "vae": ["2", 2]
+      }
+    },
+    "4": {
+      "class_type": "KSampler",
+      "inputs": {
+        "seed": "{{seed}}",
+        "steps": "{{steps}}",
+        "cfg": "{{cfg}}",
+        "sampler_name": "{{sampler}}",
+        "scheduler": "karras",
+        "denoise": 1.0,
+        "model": ["2", 0],
+        "positive": ["3", 0],
+        "negative": ["3", 1],
+        "latent_image": ["3", 2]
+      }
+    },
+    "5": {
+      "class_type": "VAEDecode",
+      "inputs": {
+        "samples": ["4", 0],
+        "vae": ["2", 2]
+      }
+    },
+    "6": {
+      "class_type": "VHS_VideoCombine",
+      "inputs": {
+        "frame_rate": "{{fps}}",
+        "loop_count": 0,
+        "filename_prefix": "clip",
+        "format": "video/h264-mp4",
+        "images": ["5", 0]
+      }
+    }
+  },
+  "parameters": [
+    {
+      "name": "keyframe_image",
+      "displayName": "关键帧图片",
+      "type": "string",
+      "defaultValue": "",
+      "nodeId": "1",
+      "fieldPath": "inputs.image"
+    },
+    {
+      "name": "width",
+      "displayName": "宽度",
+      "type": "number",
+      "defaultValue": 1024,
+      "min": 512,
+      "max": 1024,
+      "step": 64,
+      "nodeId": "3",
+      "fieldPath": "inputs.width"
+    },
+    {
+      "name": "height",
+      "displayName": "高度",
+      "type": "number",
+      "defaultValue": 576,
+      "min": 512,
+      "max": 1024,
+      "step": 64,
+      "nodeId": "3",
+      "fieldPath": "inputs.height"
+    },
+    {
+      "name": "num_frames",
+      "displayName": "帧数",
+      "type": "number",
+      "defaultValue": 25,
+      "min": 14,
+      "max": 50,
+      "step": 1,
+      "nodeId": "3",
+      "fieldPath": "inputs.video_frames"
+    },
+    {
+      "name": "fps",
+      "displayName": "帧率",
+      "type": "number",
+      "defaultValue": 8,
+      "min": 6,
+      "max": 30,
+      "step": 1,
+      "nodeId": "3",
+      "fieldPath": "inputs.fps"
+    },
+    {
+      "name": "motion_bucket_id",
+      "displayName": "运动强度",
+      "type": "number",
+      "defaultValue": 127,
+      "min": 1,
+      "max": 255,
+      "step": 1,
+      "nodeId": "3",
+      "fieldPath": "inputs.motion_bucket_id"
+    },
+    {
+      "name": "steps",
+      "displayName": "采样步数",
+      "type": "number",
+      "defaultValue": 20,
+      "min": 1,
+      "max": 100,
+      "step": 1,
+      "nodeId": "4",
+      "fieldPath": "inputs.steps"
+    },
+    {
+      "name": "cfg",
+      "displayName": "CFG Scale",
+      "type": "number",
+      "defaultValue": 2.5,
+      "min": 1.0,
+      "max": 10.0,
+      "step": 0.5,
+      "nodeId": "4",
+      "fieldPath": "inputs.cfg"
+    },
+    {
+      "name": "sampler",
+      "displayName": "采样器",
+      "type": "select",
+      "defaultValue": "euler",
+      "options": [
+        "euler",
+        "euler_ancestral",
+        "heun",
+        "dpm_2",
+        "dpm_2_ancestral",
+        "lms",
+        "dpmpp_2s_ancestral",
+        "dpmpp_2m",
+        "dpmpp_sde",
+        "ddim"
+      ],
+      "nodeId": "4",
+      "fieldPath": "inputs.sampler_name"
+    },
+    {
+      "name": "seed",
+      "displayName": "随机种子",
+      "type": "number",
+      "defaultValue": -1,
+      "min": -1,
+      "max": 2147483647,
+      "step": 1,
+      "nodeId": "4",
+      "fieldPath": "inputs.seed"
+    }
+  ]
+}
