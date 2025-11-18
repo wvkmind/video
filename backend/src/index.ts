@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { AppDataSource } from './config/database';
 import apiRoutes from './routes';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 
 dotenv.config();
 
@@ -21,6 +22,12 @@ app.get('/health', (_req, res) => {
 
 // API routes
 app.use('/api', apiRoutes);
+
+// 404 handler - must be after all routes
+app.use(notFoundHandler);
+
+// Error handler - must be last
+app.use(errorHandler);
 
 // Initialize database and start server
 AppDataSource.initialize()

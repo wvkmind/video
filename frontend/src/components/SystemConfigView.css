@@ -1,0 +1,268 @@
+.system-config-view {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.system-config-view.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.system-config-view .header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  gap: 1rem;
+}
+
+.system-config-view .header h1 {
+  margin: 0;
+  flex: 1;
+  text-align: center;
+}
+
+.btn-back {
+  padding: 0.5rem 1rem;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.btn-back:hover {
+  background: #e8e8e8;
+}
+
+.error-message {
+  padding: 1rem;
+  background: #fee;
+  border: 1px solid #fcc;
+  border-radius: 4px;
+  color: #c33;
+  margin-bottom: 1rem;
+}
+
+.success-message {
+  padding: 1rem;
+  background: #efe;
+  border: 1px solid #cfc;
+  border-radius: 4px;
+  color: #3c3;
+  margin-bottom: 1rem;
+}
+
+.config-form {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.config-section {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.config-section h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.3rem;
+  color: #333;
+}
+
+.section-description {
+  margin: 0 0 1.5rem 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.form-group input[type="text"],
+.form-group input[type="password"],
+.form-group input[type="number"] {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #4a90e2;
+}
+
+.form-group small {
+  display: block;
+  margin-top: 0.3rem;
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.input-with-button {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.input-with-button input {
+  flex: 1;
+}
+
+.btn-test {
+  padding: 0.6rem 1rem;
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.btn-test:hover:not(:disabled) {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.btn-test:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.validation-result {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.validation-result.success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.validation-result.error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.validation-icon {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.validation-message {
+  flex: 1;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 0.7rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: #4a90e2;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #357abd;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: #f5f5f5;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+.btn-secondary:hover {
+  background: #e8e8e8;
+}
+
+.config-info {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+  text-align: center;
+  color: #888;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .system-config-view {
+    padding: 1rem;
+  }
+
+  .system-config-view .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .system-config-view .header h1 {
+    text-align: left;
+  }
+
+  .input-with-button {
+    flex-direction: column;
+  }
+
+  .btn-test {
+    width: 100%;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+  }
+}

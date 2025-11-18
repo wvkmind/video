@@ -1,0 +1,22 @@
+.virtual-list {
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.virtual-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.virtual-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.virtual-list::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.virtual-list::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { storyApi, sceneApi, projectApi, Story, Scene, Project } from '../services/api';
+import { storyApi, sceneApi, projectApi, llmApi, Story, Scene, Project } from '../services/api';
 import './StoryEditorView.css';
 
 const StoryEditorView = () => {
@@ -37,6 +37,16 @@ const StoryEditorView = () => {
   const [showVersions, setShowVersions] = useState(false);
   const [selectedSceneForVersions, setSelectedSceneForVersions] = useState<string | null>(null);
   const [sceneVersions, setSceneVersions] = useState<Scene[]>([]);
+
+  // LLM assistance state
+  const [generatingOutline, setGeneratingOutline] = useState(false);
+  const [generatingScript, setGeneratingScript] = useState<string | null>(null);
+  const [compressingVoiceover, setCompressingVoiceover] = useState<string | null>(null);
+  const [showOutlineDialog, setShowOutlineDialog] = useState(false);
+  const [projectDescription, setProjectDescription] = useState('');
+  const [showCompressDialog, setShowCompressDialog] = useState(false);
+  const [compressTargetDuration, setCompressTargetDuration] = useState(30);
+  const [selectedSceneForCompress, setSelectedSceneForCompress] = useState<Scene | null>(null);
 
   useEffect(() => {
     if (projectId) {
@@ -191,6 +201,82 @@ const StoryEditorView = () => {
     return `${minutes}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // LLM assistance handlers
+  const handleGenerateStoryOutline = async () => {
+    if (!projectId) return;
+    
+    if (!projectDescription.trim()) {
+      alert('请输入项目描述');
+      return;
+    }
+
+    try {
+      setGeneratingOutline(true);
+      const res = await llmApi.generateStoryOutline(projectId, {
+        projectDescription: projectDescription.trim(),
+      });
+      
+      // Update form with generated content
+      setStoryForm({
+        hook: res.data.generated.hook || '',
+        middleStructure: res.data.generated.middleStructure || '',
+        ending: res.data.generated.ending || '',
+      });
+      
+      setShowOutlineDialog(false);
+      setProjectDescription('');
+      alert('故事大纲生成成功！请查看并根据需要修改。');
+      await loadData();
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.error?.message || '生成故事大纲失败';
+      alert(errorMsg);
+    } finally {
+      setGeneratingOutline(false);
+    }
+  };
+
+  const handleGenerateSceneScript = async (scene: Scene) => {
+    try {
+      setGeneratingScript(scene.id);
+      await llmApi.generateSceneScript(scene.id);
+      
+      alert('场景脚本生成成功！');
+      await loadData();
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.error?.message || '生成场景脚本失败';
+      alert(errorMsg);
+    } finally {
+      setGeneratingScript(null);
+    }
+  };
+
+  const handleCompressVoiceover = async () => {
+    if (!selectedSceneForCompress) return;
+
+    try {
+      setCompressingVoiceover(selectedSceneForCompress.id);
+      const res = await llmApi.compressVoiceover(selectedSceneForCompress.id, {
+        targetDuration: compressTargetDuration,
+      });
+      
+      setShowCompressDialog(false);
+      setSelectedSceneForCompress(null);
+      alert(`旁白压缩成功！从 ${res.data.originalWords} 字压缩到 ${res.data.compressedWords} 字。`);
+      await loadData();
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.error?.message || '压缩旁白失败';
+      alert(errorMsg);
+    } finally {
+      setCompressingVoiceover(null);
+    }
+  };
+
+  const openCompressDialog = (scene: Scene) => {
+    setSelectedSceneForCompress(scene);
+    setCompressTargetDuration(scene.estimatedDuration || 30);
+    setShowCompressDialog(true);
+  };;
+
   if (loading) {
     return <div className="loading">加载中...</div>;
   }
@@ -220,9 +306,18 @@ const StoryEditorView = () => {
       <div className="story-section">
         <div className="section-header">
           <h2>故事大纲</h2>
-          <button onClick={handleSaveStory} disabled={saving} className="btn-primary">
-            {saving ? '保存中...' : '保存大纲'}
-          </button>
+          <div className="header-actions">
+            <button 
+              onClick={() => setShowOutlineDialog(true)} 
+              className="btn-secondary"
+              title="使用 AI 生成故事大纲"
+            >
+              🤖 AI 生成大纲
+            </button>
+            <button onClick={handleSaveStory} disabled={saving} className="btn-primary">
+              {saving ? '保存中...' : '保存大纲'}
+            </button>
+          </div>
         </div>
 
         <div className="story-form">
@@ -309,13 +404,33 @@ const StoryEditorView = () => {
                   {scene.description && (
                     <p className="scene-description">{scene.description}</p>
                   )}
-                  <p className="scene-duration">
-                    预估时长: {formatDuration(scene.estimatedDuration)}
-                  </p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <p className="scene-duration">
+                      预估时长: {formatDuration(scene.estimatedDuration)}
+                    </p>
+                    <button
+                      onClick={() => handleGenerateSceneScript(scene)}
+                      className="btn-small"
+                      disabled={generatingScript === scene.id}
+                      title="使用 AI 生成场景脚本"
+                    >
+                      {generatingScript === scene.id ? '生成中...' : '🤖 生成脚本'}
+                    </button>
+                  </div>
 
                   {scene.voiceoverText && (
                     <div className="scene-voiceover">
-                      <strong>旁白:</strong>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <strong>旁白:</strong>
+                        <button
+                          onClick={() => openCompressDialog(scene)}
+                          className="btn-small"
+                          disabled={compressingVoiceover === scene.id}
+                          title="使用 AI 压缩旁白文本"
+                        >
+                          {compressingVoiceover === scene.id ? '压缩中...' : '🤖 压缩旁白'}
+                        </button>
+                      </div>
                       <p>{scene.voiceoverText}</p>
                     </div>
                   )}
@@ -498,6 +613,104 @@ const StoryEditorView = () => {
             <div className="form-actions">
               <button onClick={() => setSelectedSceneForVersions(null)}>关闭</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Generate Story Outline Dialog */}
+      {showOutlineDialog && (
+        <div className="modal-overlay" onClick={() => setShowOutlineDialog(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>AI 生成故事大纲</h2>
+            <p className="hint">请输入项目描述，AI 将根据描述生成故事大纲（Hook、中段结构、结尾）</p>
+            <div className="form-group">
+              <label>项目描述 *</label>
+              <textarea
+                value={projectDescription}
+                onChange={(e) => setProjectDescription(e.target.value)}
+                rows={6}
+                placeholder="例如：一个关于环保主题的产品介绍视频，目标受众是年轻人，时长约60秒..."
+                required
+              />
+            </div>
+            <div className="form-actions">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowOutlineDialog(false);
+                  setProjectDescription('');
+                }}
+                disabled={generatingOutline}
+              >
+                取消
+              </button>
+              <button
+                onClick={handleGenerateStoryOutline}
+                disabled={generatingOutline || !projectDescription.trim()}
+                className="btn-primary"
+              >
+                {generatingOutline ? '生成中...' : '生成大纲'}
+              </button>
+            </div>
+            {generatingOutline && (
+              <div className="generation-progress">
+                <div className="progress-message">正在生成故事大纲，请稍候...</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Compress Voiceover Dialog */}
+      {showCompressDialog && selectedSceneForCompress && (
+        <div className="modal-overlay" onClick={() => setShowCompressDialog(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>AI 压缩旁白</h2>
+            <p className="hint">AI 将根据目标时长压缩旁白文本，保留核心内容</p>
+            <div className="form-group">
+              <label>当前旁白</label>
+              <textarea
+                value={selectedSceneForCompress.voiceoverText || ''}
+                rows={4}
+                disabled
+                style={{ backgroundColor: '#f5f5f5' }}
+              />
+              <small>当前字数: {(selectedSceneForCompress.voiceoverText || '').split(/\s+/).length}</small>
+            </div>
+            <div className="form-group">
+              <label>目标时长（秒）*</label>
+              <input
+                type="number"
+                value={compressTargetDuration}
+                onChange={(e) => setCompressTargetDuration(parseInt(e.target.value))}
+                min="1"
+                required
+              />
+            </div>
+            <div className="form-actions">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCompressDialog(false);
+                  setSelectedSceneForCompress(null);
+                }}
+                disabled={compressingVoiceover !== null}
+              >
+                取消
+              </button>
+              <button
+                onClick={handleCompressVoiceover}
+                disabled={compressingVoiceover !== null}
+                className="btn-primary"
+              >
+                {compressingVoiceover ? '压缩中...' : '压缩旁白'}
+              </button>
+            </div>
+            {compressingVoiceover && (
+              <div className="generation-progress">
+                <div className="progress-message">正在压缩旁白，请稍候...</div>
+              </div>
+            )}
           </div>
         </div>
       )}

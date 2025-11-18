@@ -29,6 +29,13 @@ export class Story {
   @Column({ type: 'integer', default: 1 })
   version!: number;
 
+  @Column({
+    type: 'varchar',
+    length: 50,
+    default: 'draft',
+  })
+  status!: 'draft' | 'generated' | 'locked';
+
   @CreateDateColumn()
   createdAt!: Date;
 

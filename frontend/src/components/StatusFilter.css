@@ -1,0 +1,32 @@
+.status-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-filter label {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.status-filter-select {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background-color: white;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+}
+
+.status-filter-select:hover {
+  border-color: #1976d2;
+}
+
+.status-filter-select:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+}

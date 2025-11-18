@@ -33,7 +33,7 @@ router.get('/projects/:id/characters', async (req: Request, res: Response) => {
 router.put('/characters/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const character = await characterService.updateCharacter(parseInt(id), req.body);
+    const character = await characterService.updateCharacter(id, req.body);
     res.json(character);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -44,7 +44,7 @@ router.put('/characters/:id', async (req: Request, res: Response) => {
 router.delete('/characters/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    await characterService.deleteCharacter(parseInt(id));
+    await characterService.deleteCharacter(id);
     res.json({ message: 'Character deleted successfully' });
   } catch (error: any) {
     res.status(500).json({ error: error.message });

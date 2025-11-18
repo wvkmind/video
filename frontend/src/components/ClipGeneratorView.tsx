@@ -154,15 +154,16 @@ export const ClipGeneratorView: React.FC<ClipGeneratorViewProps> = ({ projectId 
     }
   };
 
-  const handleExtractFrame = async (clipId: number, frameNumber: number) => {
-    try {
-      const response = await api.post(`/clips/${clipId}/extract-frame`, { frameNumber });
-      console.log('Frame extracted:', response.data);
-      alert(`帧已提取: ${response.data.framePath}`);
-    } catch (error) {
-      console.error('Failed to extract frame:', error);
-    }
-  };
+  // Frame extraction functionality - can be used for future features
+  // const handleExtractFrame = async (clipId: number, frameNumber: number) => {
+  //   try {
+  //     const response = await api.post(`/clips/${clipId}/extract-frame`, { frameNumber });
+  //     console.log('Frame extracted:', response.data);
+  //     alert(`帧已提取: ${response.data.framePath}`);
+  //   } catch (error) {
+  //     console.error('Failed to extract frame:', error);
+  //   }
+  // };
 
   const toggleCompareClip = (clipId: number) => {
     setSelectedCompareClips(prev => {

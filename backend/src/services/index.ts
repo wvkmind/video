@@ -7,3 +7,5 @@ export { KeyframeService } from './KeyframeService';
 export { VersionService } from './VersionService';
 export { LLMService } from './LLMService';
 export { SystemConfigService } from './SystemConfigService';
+export { StatusService } from './StatusService';
+export { DependencyService } from './DependencyService';

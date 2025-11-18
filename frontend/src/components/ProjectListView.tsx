@@ -131,9 +131,14 @@ const ProjectListView = () => {
     <div className="project-list-view">
       <div className="header">
         <h1>项目总览</h1>
-        <button className="btn-primary" onClick={() => setShowCreateForm(true)}>
-          + 新建项目
-        </button>
+        <div className="header-actions">
+          <button className="btn-secondary" onClick={() => navigate('/system/config')}>
+            ⚙️ 系统配置
+          </button>
+          <button className="btn-primary" onClick={() => setShowCreateForm(true)}>
+            + 新建项目
+          </button>
+        </div>
       </div>
 
       {/* Filters and Search */}

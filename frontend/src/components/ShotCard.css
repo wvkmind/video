@@ -1,0 +1,7 @@
+/* ShotCard styles are already defined in StoryboardView.css */
+/* This file is kept for potential future customizations */
+
+.shot-card.dragging {
+  opacity: 0.5;
+  cursor: move;
+}

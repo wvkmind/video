@@ -1,9 +1,11 @@
 import { AppDataSource } from '../config/database';
 import { Clip } from '../entities/Clip';
 import { BaseRepository } from './BaseRepository';
+import { cacheManager, CacheKeys } from '../utils/cacheManager';
 
 /**
  * Repository for Clip entity with CRUD operations
+ * Optimized with caching
  */
 export class ClipRepository extends BaseRepository<Clip> {
   constructor() {
@@ -11,22 +13,34 @@ export class ClipRepository extends BaseRepository<Clip> {
   }
 
   /**
-   * Find clips by shot ID
+   * Find clips by shot ID with caching
    */
   async findByShotId(shotId: string): Promise<Clip[]> {
-    return this.repository.find({
-      where: { shotId },
-      order: { version: 'DESC' },
-    });
+    return cacheManager.getOrSet(
+      CacheKeys.clipList(shotId),
+      async () => {
+        return this.repository.find({
+          where: { shotId },
+          order: { version: 'DESC' },
+        });
+      },
+      2 * 60 * 1000 // 2 minutes
+    );
   }
 
   /**
-   * Find selected clip for a shot
+   * Find selected clip for a shot with caching
    */
   async findSelectedByShotId(shotId: string): Promise<Clip | null> {
-    return this.repository.findOne({
-      where: { shotId, isSelected: true },
-    });
+    return cacheManager.getOrSet(
+      CacheKeys.clipSelected(shotId),
+      async () => {
+        return this.repository.findOne({
+          where: { shotId, isSelected: true },
+        });
+      },
+      2 * 60 * 1000 // 2 minutes
+    );
   }
 
   /**
@@ -68,7 +82,7 @@ export class ClipRepository extends BaseRepository<Clip> {
   }
 
   /**
-   * Select a clip (unselect others for the same shot)
+   * Select a clip (unselect others for the same shot) with cache invalidation
    */
   async selectClip(id: string): Promise<Clip | null> {
     const clip = await this.findById(id);
@@ -83,6 +97,12 @@ export class ClipRepository extends BaseRepository<Clip> {
     );
 
     // Select this clip
-    return this.update(id, { isSelected: true });
+    const result = await this.update(id, { isSelected: true });
+    
+    // Invalidate cache
+    cacheManager.delete(CacheKeys.clipList(clip.shotId));
+    cacheManager.delete(CacheKeys.clipSelected(clip.shotId));
+    
+    return result;
   }
 }

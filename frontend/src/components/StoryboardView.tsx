@@ -10,6 +10,9 @@ import {
   CreateShotData,
   BatchStyleData,
 } from '../services/api';
+import StatusSelector from './StatusSelector';
+import StatusFilter from './StatusFilter';
+import { updateShotStatus } from '../utils/statusApi';
 import './StoryboardView.css';
 
 const StoryboardView = () => {
@@ -57,6 +60,9 @@ const StoryboardView = () => {
 
   // Timeline view
   const [selectedSceneId, setSelectedSceneId] = useState<string | null>(null);
+
+  // Status filter
+  const [statusFilter, setStatusFilter] = useState<string>('');
 
   useEffect(() => {
     if (projectId) {
@@ -304,9 +310,20 @@ const StoryboardView = () => {
     return `importance-${importance || 'medium'}`;
   };
 
-  const filteredShots = selectedSceneId
-    ? shots.filter((s) => s.sceneId === selectedSceneId)
-    : shots;
+  const handleStatusChange = async (shotId: string, newStatus: string) => {
+    try {
+      await updateShotStatus(shotId, newStatus);
+      // Reload shots to get updated status
+      await loadData();
+    } catch (error) {
+      console.error('Failed to update shot status:', error);
+      throw error;
+    }
+  };
+
+  const filteredShots = shots
+    .filter((s) => (selectedSceneId ? s.sceneId === selectedSceneId : true))
+    .filter((s) => (statusFilter ? s.status === statusFilter : true));
 
   const getSceneName = (sceneId: string) => {
     const scene = scenes.find((s) => s.id === sceneId);
@@ -393,6 +410,11 @@ const StoryboardView = () => {
         <div className="section-header">
           <h2>镜头列表</h2>
           <div className="section-actions">
+            <StatusFilter
+              currentFilter={statusFilter}
+              onFilterChange={setStatusFilter}
+              type="entity"
+            />
             {selectedShots.size > 0 && (
               <>
                 <span className="selection-count">已选择 {selectedShots.size} 个镜头</span>
@@ -481,6 +503,11 @@ const StoryboardView = () => {
                         <span className={`importance-badge ${getImportanceClass(shot.importance)}`}>
                           {shot.importance === 'high' ? '重要' : shot.importance === 'low' ? '次要' : '一般'}
                         </span>
+                        <StatusSelector
+                          currentStatus={shot.status || 'draft'}
+                          type="entity"
+                          onStatusChange={(newStatus) => handleStatusChange(shot.id, newStatus)}
+                        />
                       </div>
                       <div className="shot-actions">
                         <button onClick={() => handleEditShot(shot)} className="btn-small">

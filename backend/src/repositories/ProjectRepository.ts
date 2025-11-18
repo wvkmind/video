@@ -2,9 +2,11 @@ import { Repository, FindOptionsWhere } from 'typeorm';
 import { AppDataSource } from '../config/database';
 import { Project } from '../entities/Project';
 import { BaseRepository } from './BaseRepository';
+import { cacheManager, CacheKeys, CacheInvalidation } from '../utils/cacheManager';
 
 /**
  * Repository for Project entity with CRUD operations
+ * Optimized with caching and efficient queries
  */
 export class ProjectRepository extends BaseRepository<Project> {
   constructor() {
@@ -32,13 +34,27 @@ export class ProjectRepository extends BaseRepository<Project> {
   }
 
   /**
-   * Find project with all relations
+   * Find project with all relations using optimized query
+   * Uses LEFT JOIN to prevent N+1 queries
    */
   async findByIdWithRelations(id: string): Promise<Project | null> {
-    return this.repository.findOne({
-      where: { id },
-      relations: ['story', 'scenes', 'shots', 'timelines', 'characters'],
-    });
+    return cacheManager.getOrSet(
+      CacheKeys.projectWithRelations(id),
+      async () => {
+        return this.repository
+          .createQueryBuilder('project')
+          .leftJoinAndSelect('project.story', 'story')
+          .leftJoinAndSelect('project.scenes', 'scenes')
+          .leftJoinAndSelect('project.shots', 'shots')
+          .leftJoinAndSelect('project.timelines', 'timelines')
+          .leftJoinAndSelect('project.characters', 'characters')
+          .where('project.id = :id', { id })
+          .orderBy('scenes.sceneNumber', 'ASC')
+          .addOrderBy('shots.sequenceNumber', 'ASC')
+          .getOne();
+      },
+      3 * 60 * 1000 // 3 minutes
+    );
   }
 
   /**
@@ -53,7 +69,7 @@ export class ProjectRepository extends BaseRepository<Project> {
   }
 
   /**
-   * Find projects with pagination and filters
+   * Find projects with pagination and filters with caching
    */
   async findWithFilters(
     page: number = 1,
@@ -64,34 +80,42 @@ export class ProjectRepository extends BaseRepository<Project> {
       searchTerm?: string;
     }
   ): Promise<{ data: Project[]; total: number; page: number; limit: number; totalPages: number }> {
-    const queryBuilder = this.repository.createQueryBuilder('project');
+    const cacheKey = CacheKeys.projectList({ page, limit, ...filters });
+    
+    return cacheManager.getOrSet(
+      cacheKey,
+      async () => {
+        const queryBuilder = this.repository.createQueryBuilder('project');
 
-    if (filters?.status) {
-      queryBuilder.andWhere('project.status = :status', { status: filters.status });
-    }
+        if (filters?.status) {
+          queryBuilder.andWhere('project.status = :status', { status: filters.status });
+        }
 
-    if (filters?.type) {
-      queryBuilder.andWhere('project.type = :type', { type: filters.type });
-    }
+        if (filters?.type) {
+          queryBuilder.andWhere('project.type = :type', { type: filters.type });
+        }
 
-    if (filters?.searchTerm) {
-      queryBuilder.andWhere('project.name LIKE :searchTerm', {
-        searchTerm: `%${filters.searchTerm}%`,
-      });
-    }
+        if (filters?.searchTerm) {
+          queryBuilder.andWhere('project.name LIKE :searchTerm', {
+            searchTerm: `%${filters.searchTerm}%`,
+          });
+        }
 
-    const skip = (page - 1) * limit;
-    queryBuilder.skip(skip).take(limit).orderBy('project.updatedAt', 'DESC');
+        const skip = (page - 1) * limit;
+        queryBuilder.skip(skip).take(limit).orderBy('project.updatedAt', 'DESC');
 
-    const [data, total] = await queryBuilder.getManyAndCount();
+        const [data, total] = await queryBuilder.getManyAndCount();
 
-    return {
-      data,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
+        return {
+          data,
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        };
+      },
+      1 * 60 * 1000 // 1 minute for list queries
+    );
   }
 
   /**

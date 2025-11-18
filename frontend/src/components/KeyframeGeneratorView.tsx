@@ -5,6 +5,7 @@ import {
   projectApi,
   keyframeApi,
   workflowApi,
+  llmApi,
   Shot,
   Project,
   Keyframe,
@@ -51,6 +52,12 @@ const KeyframeGeneratorView = () => {
   const [selectedKeyframeForPreview, setSelectedKeyframeForPreview] = useState<Keyframe | null>(
     null
   );
+
+  // LLM optimization state
+  const [optimizingPrompt, setOptimizingPrompt] = useState(false);
+  const [showOptimizeDialog, setShowOptimizeDialog] = useState(false);
+  const [originalPrompt, setOriginalPrompt] = useState('');
+  const [optimizedPrompt, setOptimizedPrompt] = useState('');
 
   useEffect(() => {
     if (projectId) {
@@ -193,6 +200,32 @@ const KeyframeGeneratorView = () => {
 
   const handleParameterChange = (name: string, value: any) => {
     setParameters({ ...parameters, [name]: value });
+  };
+
+  const handleOptimizePrompt = async () => {
+    if (!selectedShot) {
+      alert('请先选择一个镜头');
+      return;
+    }
+
+    try {
+      setOptimizingPrompt(true);
+      const res = await llmApi.optimizePrompt(selectedShot.id);
+      
+      setOriginalPrompt(prompt || autoPrompt);
+      setOptimizedPrompt(res.data.optimizedPrompt);
+      setShowOptimizeDialog(true);
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.error?.message || '优化 Prompt 失败';
+      alert(errorMsg);
+    } finally {
+      setOptimizingPrompt(false);
+    }
+  };
+
+  const handleUseOptimizedPrompt = () => {
+    setPrompt(optimizedPrompt);
+    setShowOptimizeDialog(false);
   };
 
   const formatDate = (dateString: string) => {
@@ -383,7 +416,17 @@ const KeyframeGeneratorView = () => {
             <>
               {/* Prompt Editor */}
               <div className="param-section">
-                <h3>Prompt 编辑器</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <h3 style={{ margin: 0 }}>Prompt 编辑器</h3>
+                  <button
+                    onClick={handleOptimizePrompt}
+                    className="btn-small"
+                    disabled={optimizingPrompt || !selectedShot}
+                    title="使用 AI 优化 Prompt"
+                  >
+                    {optimizingPrompt ? '优化中...' : '🤖 AI 优化'}
+                  </button>
+                </div>
                 
                 <div className="auto-prompt-section">
                   <label>自动生成的 Prompt</label>
@@ -550,6 +593,49 @@ const KeyframeGeneratorView = () => {
                 </button>
               )}
               <button onClick={() => setSelectedKeyframeForPreview(null)}>关闭</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Optimize Prompt Dialog */}
+      {showOptimizeDialog && (
+        <div className="modal-overlay" onClick={() => setShowOptimizeDialog(false)}>
+          <div className="modal large" onClick={(e) => e.stopPropagation()}>
+            <h2>AI Prompt 优化对比</h2>
+            <p className="hint">AI 已根据镜头描述优化了 Prompt，您可以对比查看并选择使用</p>
+            
+            <div className="prompt-comparison">
+              <div className="prompt-comparison-item">
+                <h3>原始 Prompt</h3>
+                <div className="prompt-box">
+                  {originalPrompt || '无'}
+                </div>
+              </div>
+              
+              <div className="prompt-comparison-divider">→</div>
+              
+              <div className="prompt-comparison-item">
+                <h3>优化后 Prompt</h3>
+                <div className="prompt-box optimized">
+                  {optimizedPrompt}
+                </div>
+              </div>
+            </div>
+
+            <div className="form-actions">
+              <button
+                type="button"
+                onClick={() => setShowOptimizeDialog(false)}
+              >
+                取消
+              </button>
+              <button
+                onClick={handleUseOptimizedPrompt}
+                className="btn-primary"
+              >
+                使用优化后的 Prompt
+              </button>
             </div>
           </div>
         </div>

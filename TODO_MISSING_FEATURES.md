@@ -321,3 +321,10 @@ npm install react-dnd react-dnd-html5-backend wavesurfer.js
 **创建时间**：2024年
 **最后更新**：2024年
 **状态**：待实施
+
+
+❌ 缺少可视化时间线轨道
+❌ 缺少拖拽调整顺序
+❌ 缺少IN/OUT点精确调整
+❌ 缺少音频波形显示
+❌ 缺少转场编辑UI

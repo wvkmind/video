@@ -5,6 +5,9 @@ import StoryboardView from './components/StoryboardView';
 import KeyframeGeneratorView from './components/KeyframeGeneratorView';
 import { ClipGeneratorView } from './components/ClipGeneratorView';
 import { TimelineEditorView } from './components/TimelineEditorView';
+import SystemConfigView from './components/SystemConfigView';
+import ErrorBoundary from './components/ErrorBoundary';
+import { ErrorProvider } from './contexts/ErrorContext';
 
 function ClipGeneratorWrapper() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -13,18 +16,23 @@ function ClipGeneratorWrapper() {
 
 function App() {
   return (
-    <Router>
-      <div className="app">
-        <Routes>
-          <Route path="/" element={<ProjectListView />} />
-          <Route path="/projects/:projectId/story" element={<StoryEditorView />} />
-          <Route path="/projects/:projectId/storyboard" element={<StoryboardView />} />
-          <Route path="/projects/:projectId/keyframes" element={<KeyframeGeneratorView />} />
-          <Route path="/projects/:projectId/clips" element={<ClipGeneratorWrapper />} />
-          <Route path="/projects/:projectId/timeline" element={<TimelineEditorView />} />
-        </Routes>
-      </div>
-    </Router>
+    <ErrorBoundary>
+      <ErrorProvider>
+        <Router>
+          <div className="app">
+            <Routes>
+              <Route path="/" element={<ProjectListView />} />
+              <Route path="/system/config" element={<SystemConfigView />} />
+              <Route path="/projects/:projectId/story" element={<StoryEditorView />} />
+              <Route path="/projects/:projectId/storyboard" element={<StoryboardView />} />
+              <Route path="/projects/:projectId/keyframes" element={<KeyframeGeneratorView />} />
+              <Route path="/projects/:projectId/clips" element={<ClipGeneratorWrapper />} />
+              <Route path="/projects/:projectId/timeline" element={<TimelineEditorView />} />
+            </Routes>
+          </div>
+        </Router>
+      </ErrorProvider>
+    </ErrorBoundary>
   );
 }
 

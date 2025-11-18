@@ -11,6 +11,8 @@ import characterRoutes from './characterRoutes';
 import styleRoutes from './styleRoutes';
 import llmRoutes from './llmRoutes';
 import systemConfigRoutes from './systemConfigRoutes';
+import statusRoutes from './statusRoutes';
+import dependencyRoutes from './dependencyRoutes';
 
 const router = Router();
 
@@ -53,5 +55,11 @@ router.use('/', llmRoutes);
 
 // Mount system config routes
 router.use('/system', systemConfigRoutes);
+
+// Mount status routes
+router.use('/status', statusRoutes);
+
+// Mount dependency routes
+router.use('/dependencies', dependencyRoutes);
 
 export default router;

@@ -53,6 +53,13 @@ export class Timeline {
   @Column({ type: 'varchar', length: 500, nullable: true })
   bgmAudioPath?: string;
 
+  @Column({
+    type: 'varchar',
+    length: 50,
+    default: 'draft',
+  })
+  status!: 'draft' | 'generated' | 'locked';
+
   @CreateDateColumn()
   createdAt!: Date;
 

@@ -1,11 +1,16 @@
 import axios from 'axios';
+import { setupAxiosInterceptors } from '../utils/errorHandler';
 
 const api = axios.create({
   baseURL: '/api',
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 30000, // 30 seconds timeout
 });
+
+// 设置错误拦截器
+setupAxiosInterceptors(api);
 
 // Project API
 export interface Project {
@@ -77,6 +82,7 @@ export interface Story {
   middleStructure?: string;
   ending?: string;
   version: number;
+  status: 'draft' | 'generated' | 'locked';
   createdAt: string;
   updatedAt: string;
 }
@@ -110,6 +116,7 @@ export interface Scene {
   dialogueText?: string;
   notes?: string;
   version: number;
+  status: 'draft' | 'generated' | 'locked';
   createdAt: string;
   updatedAt: string;
 }
@@ -165,6 +172,7 @@ export interface Shot {
   useLastFrameAsFirst?: boolean;
   relatedVoiceover?: string;
   importance?: 'high' | 'medium' | 'low';
+  status: 'draft' | 'generated' | 'locked';
   createdAt: string;
   updatedAt: string;
 }
@@ -411,6 +419,126 @@ export const clipApi = {
   
   detectMismatch: (clip1Id: string, clip2Id: string) => 
     api.post<FrameMismatchResult>('/clips/detect-mismatch', { clip1Id, clip2Id }),
+};
+
+// LLM API
+export interface GenerateStoryOutlineParams {
+  projectDescription: string;
+}
+
+export interface GenerateStoryOutlineResponse {
+  story: Story;
+  generated: {
+    hook?: string;
+    middleStructure?: string;
+    ending?: string;
+  };
+}
+
+export interface GenerateScriptResponse {
+  scene: Scene;
+  generatedScript: string;
+}
+
+export interface OptimizePromptResponse {
+  shotId: string;
+  originalDescription: {
+    environment?: string;
+    subject?: string;
+    action?: string;
+    cameraMovement?: string;
+    lighting?: string;
+    style?: string;
+  };
+  optimizedPrompt: string;
+}
+
+export interface CompressVoiceoverParams {
+  targetDuration: number;
+}
+
+export interface CompressVoiceoverResponse {
+  scene: Scene;
+  originalText: string;
+  compressedText: string;
+  originalWords: number;
+  compressedWords: number;
+  targetDuration: number;
+}
+
+export const llmApi = {
+  generateStoryOutline: (projectId: string, params: GenerateStoryOutlineParams) =>
+    api.post<GenerateStoryOutlineResponse>(`/projects/${projectId}/generate-story-outline`, params),
+
+  generateSceneScript: (sceneId: string) =>
+    api.post<GenerateScriptResponse>(`/scenes/${sceneId}/generate-script`),
+
+  optimizePrompt: (shotId: string) =>
+    api.post<OptimizePromptResponse>(`/shots/${shotId}/optimize-prompt`),
+
+  compressVoiceover: (sceneId: string, params: CompressVoiceoverParams) =>
+    api.post<CompressVoiceoverResponse>(`/scenes/${sceneId}/compress-voiceover`, params),
+};
+
+// System Config API
+export interface SystemConfig {
+  id: string;
+  comfyuiBaseUrl: string;
+  comfyuiTimeout: number;
+  poeApiKey: string;
+  poeModel: string;
+  poeApiUrl: string;
+  storageBasePath: string;
+  ffmpegPath: string;
+  updatedAt: string;
+}
+
+export interface UpdateSystemConfigData {
+  comfyuiBaseUrl?: string;
+  comfyuiTimeout?: number;
+  poeApiKey?: string;
+  poeModel?: string;
+  poeApiUrl?: string;
+  storageBasePath?: string;
+  ffmpegPath?: string;
+}
+
+export interface ValidationResult {
+  valid: boolean;
+  message: string;
+}
+
+export interface AllValidationResults {
+  valid: boolean;
+  results: {
+    comfyui: ValidationResult;
+    poeApi: ValidationResult;
+    ffmpeg: ValidationResult;
+    storage: ValidationResult;
+  };
+}
+
+export const systemConfigApi = {
+  get: () => 
+    api.get<SystemConfig>('/system/config'),
+  
+  update: (data: UpdateSystemConfigData) => 
+    api.put<SystemConfig>('/system/config', data),
+  
+  validateAll: () => 
+    api.post<AllValidationResults>('/system/config/validate'),
+  
+  validateComfyUI: (baseUrl?: string) => 
+    api.post<ValidationResult>('/system/config/validate/comfyui', { baseUrl }),
+  
+  validatePoeAPI: (apiKey?: string, apiUrl?: string) => 
+    api.post<ValidationResult>('/system/config/validate/poe', { apiKey, apiUrl }),
+  
+  validateFFmpeg: (ffmpegPath?: string) => 
+    api.post<ValidationResult>('/system/config/validate/ffmpeg', { ffmpegPath }),
+  
+  validateStorage: (storagePath?: string) => 
+    api.post<ValidationResult>('/system/config/validate/storage', { storagePath }),
 };
 
 export { api };

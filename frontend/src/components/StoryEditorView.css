@@ -389,6 +389,28 @@
   color: #dc3545;
 }
 
+/* Generation Progress */
+.generation-progress {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #e3f2fd;
+  border: 1px solid #90caf9;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.progress-message {
+  color: #1976d2;
+  font-weight: 500;
+}
+
+.hint {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .header {

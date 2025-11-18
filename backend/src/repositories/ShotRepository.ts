@@ -2,9 +2,11 @@ import { AppDataSource } from '../config/database';
 import { Shot } from '../entities/Shot';
 import { BaseRepository } from './BaseRepository';
 import { In } from 'typeorm';
+import { cacheManager, CacheKeys, CacheInvalidation } from '../utils/cacheManager';
 
 /**
  * Repository for Shot entity with CRUD operations
+ * Optimized with caching and eager loading to prevent N+1 queries
  */
 export class ShotRepository extends BaseRepository<Shot> {
   constructor() {
@@ -12,24 +14,48 @@ export class ShotRepository extends BaseRepository<Shot> {
   }
 
   /**
-   * Find all shots for a project
+   * Find all shots for a project with optimized eager loading
+   * Uses LEFT JOIN to prevent N+1 queries
    */
   async findByProjectId(projectId: string): Promise<Shot[]> {
-    return this.repository.find({
-      where: { projectId },
-      order: { sequenceNumber: 'ASC' },
-      relations: ['scene', 'keyframes', 'clips'],
-    });
+    // Check cache first
+    const cached = cacheManager.get<Shot[]>(CacheKeys.shotList(projectId));
+    if (cached) {
+      return cached;
+    }
+
+    // Use query builder with LEFT JOIN for optimal performance
+    const shots = await this.repository
+      .createQueryBuilder('shot')
+      .leftJoinAndSelect('shot.scene', 'scene')
+      .leftJoinAndSelect('shot.keyframes', 'keyframes')
+      .leftJoinAndSelect('shot.clips', 'clips')
+      .where('shot.projectId = :projectId', { projectId })
+      .orderBy('shot.sequenceNumber', 'ASC')
+      .addOrderBy('keyframes.version', 'DESC')
+      .addOrderBy('clips.version', 'DESC')
+      .getMany();
+
+    // Cache for 2 minutes
+    cacheManager.set(CacheKeys.shotList(projectId), shots, 2 * 60 * 1000);
+    
+    return shots;
   }
 
   /**
-   * Find all shots for a scene
+   * Find all shots for a scene with caching
    */
   async findBySceneId(sceneId: string): Promise<Shot[]> {
-    return this.repository.find({
-      where: { sceneId },
-      order: { sequenceNumber: 'ASC' },
-    });
+    return cacheManager.getOrSet(
+      CacheKeys.shotsByScene(sceneId),
+      async () => {
+        return this.repository.find({
+          where: { sceneId },
+          order: { sequenceNumber: 'ASC' },
+        });
+      },
+      2 * 60 * 1000 // 2 minutes
+    );
   }
 
   /**
@@ -84,10 +110,18 @@ export class ShotRepository extends BaseRepository<Shot> {
   }
 
   /**
-   * Batch update shots
+   * Batch update shots with cache invalidation
    */
   async batchUpdate(shotIds: string[], data: Partial<Shot>): Promise<void> {
     await this.repository.update({ id: In(shotIds) }, data as any);
+    
+    // Invalidate cache for all affected shots
+    for (const shotId of shotIds) {
+      const shot = await this.repository.findOne({ where: { id: shotId } });
+      if (shot) {
+        CacheInvalidation.shot(shotId, shot.projectId, shot.sceneId);
+      }
+    }
   }
 
   /**

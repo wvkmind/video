@@ -45,9 +45,9 @@ export const TimelineEditorView: React.FC = () => {
   const [exporting, setExporting] = useState(false);
   const [showVersions, setShowVersions] = useState(false);
   
-  // Transition preview state
-  const [shots, setShots] = useState<Shot[]>([]);
-  const [clips, setClips] = useState<Map<string, Clip[]>>(new Map());
+  // Transition preview state - for future frame mismatch detection
+  const [, setShots] = useState<Shot[]>([]);
+  const [, setClips] = useState<Map<string, Clip[]>>(new Map());
   const [transitionPoints, setTransitionPoints] = useState<TransitionPoint[]>([]);
   const [selectedTransition, setSelectedTransition] = useState<TransitionPoint | null>(null);
   const [mismatchResults, setMismatchResults] = useState<Map<string, FrameMismatchResult>>(new Map());

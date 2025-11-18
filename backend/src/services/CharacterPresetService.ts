@@ -18,7 +18,7 @@ export class CharacterPresetService {
     return await this.characterRepository.save(character);
   }
 
-  async updateCharacter(id: number, data: Partial<CreateCharacterDTO>): Promise<CharacterPreset> {
+  async updateCharacter(id: string, data: Partial<CreateCharacterDTO>): Promise<CharacterPreset> {
     await this.characterRepository.update(id, data);
     const character = await this.characterRepository.findOne({ where: { id } });
     if (!character) {
@@ -27,7 +27,7 @@ export class CharacterPresetService {
     return character;
   }
 
-  async deleteCharacter(id: number): Promise<void> {
+  async deleteCharacter(id: string): Promise<void> {
     await this.characterRepository.delete(id);
   }
 
@@ -38,7 +38,7 @@ export class CharacterPresetService {
     });
   }
 
-  async getCharacter(id: number): Promise<CharacterPreset | null> {
+  async getCharacter(id: string): Promise<CharacterPreset | null> {
     return await this.characterRepository.findOne({ where: { id } });
   }
 

@@ -17,9 +17,12 @@ router.post('/styles', async (req: Request, res: Response) => {
 // GET /api/styles - 获取风格列表
 router.get('/styles', async (req: Request, res: Response) => {
   try {
-    const { isGlobal } = req.query;
+    const { projectId } = req.query;
+    // If projectId is 'global', get global styles (projectId = null)
+    // If projectId is provided, get project-specific styles
+    // If projectId is undefined, get all styles
     const styles = await styleService.listStyles(
-      isGlobal !== undefined ? isGlobal === 'true' : undefined
+      projectId === 'global' ? null : (projectId as string | undefined)
     );
     res.json(styles);
   } catch (error: any) {
@@ -31,7 +34,7 @@ router.get('/styles', async (req: Request, res: Response) => {
 router.put('/styles/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const style = await styleService.updateStyle(parseInt(id), req.body);
+    const style = await styleService.updateStyle(id, req.body);
     res.json(style);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -42,7 +45,7 @@ router.put('/styles/:id', async (req: Request, res: Response) => {
 router.delete('/styles/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    await styleService.deleteStyle(parseInt(id));
+    await styleService.deleteStyle(id);
     res.json({ message: 'Style deleted successfully' });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -59,7 +62,7 @@ router.post('/styles/:id/apply-to-shots', async (req: Request, res: Response) =>
       return res.status(400).json({ error: 'shotIds must be an array' });
     }
 
-    await styleService.applyStyleToShots(parseInt(id), shotIds);
+    await styleService.applyStyleToShots(id, shotIds);
     res.json({ message: 'Style applied successfully' });
   } catch (error: any) {
     res.status(500).json({ error: error.message });

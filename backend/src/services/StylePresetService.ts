@@ -4,11 +4,13 @@ import { Shot } from '../entities/Shot';
 
 export interface CreateStyleDTO {
   name: string;
-  description?: string;
+  projectId?: string; // null for global styles
   promptPrefix?: string;
   promptSuffix?: string;
   negativePrompt?: string;
-  isGlobal?: boolean;
+  defaultSteps?: number;
+  defaultCfg?: number;
+  defaultSampler?: string;
 }
 
 export class StylePresetService {
@@ -20,7 +22,7 @@ export class StylePresetService {
     return await this.styleRepository.save(style);
   }
 
-  async updateStyle(id: number, data: Partial<CreateStyleDTO>): Promise<StylePreset> {
+  async updateStyle(id: string, data: Partial<CreateStyleDTO>): Promise<StylePreset> {
     await this.styleRepository.update(id, data);
     const style = await this.styleRepository.findOne({ where: { id } });
     if (!style) {
@@ -29,26 +31,31 @@ export class StylePresetService {
     return style;
   }
 
-  async deleteStyle(id: number): Promise<void> {
+  async deleteStyle(id: string): Promise<void> {
     await this.styleRepository.delete(id);
   }
 
-  async listStyles(isGlobal?: boolean): Promise<StylePreset[]> {
-    const where = isGlobal !== undefined ? { isGlobal } : {};
+  async listStyles(projectId?: string | null): Promise<StylePreset[]> {
+    // If projectId is provided, get project-specific styles
+    // If projectId is null, get global styles
+    // If projectId is undefined, get all styles
+    const where = projectId !== undefined 
+      ? { projectId: projectId || undefined } // null becomes undefined for TypeORM
+      : {};
     return await this.styleRepository.find({
-      where,
+      where: where as any,
       order: { createdAt: 'DESC' },
     });
   }
 
-  async getStyle(id: number): Promise<StylePreset | null> {
+  async getStyle(id: string): Promise<StylePreset | null> {
     return await this.styleRepository.findOne({ where: { id } });
   }
 
   /**
    * 批量应用风格到镜头
    */
-  async applyStyleToShots(styleId: number, shotIds: number[]): Promise<void> {
+  async applyStyleToShots(styleId: string, shotIds: string[]): Promise<void> {
     const style = await this.getStyle(styleId);
     if (!style) {
       throw new Error('Style not found');

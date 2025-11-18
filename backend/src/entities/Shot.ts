@@ -81,6 +81,13 @@ export class Shot {
   @Column({ type: 'varchar', length: 50, default: 'medium' })
   importance!: 'high' | 'medium' | 'low';
 
+  @Column({
+    type: 'varchar',
+    length: 50,
+    default: 'draft',
+  })
+  status!: 'draft' | 'generated' | 'locked';
+
   @CreateDateColumn()
   createdAt!: Date;
 
