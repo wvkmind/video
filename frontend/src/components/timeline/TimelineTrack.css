@@ -1,0 +1,81 @@
+.timeline-track {
+  display: flex;
+  height: 60px;
+  border-bottom: 1px solid #333;
+  background: #1a1a1a;
+}
+
+.track-label {
+  width: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #252525;
+  border-right: 1px solid #333;
+  font-size: 12px;
+  color: #aaa;
+  font-weight: 500;
+}
+
+.track-content {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+}
+
+.timeline-clip {
+  position: absolute;
+  top: 5px;
+  height: 50px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: transform 0.1s, box-shadow 0.1s;
+  overflow: hidden;
+}
+
+.timeline-clip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.timeline-clip.dragging {
+  opacity: 0.5;
+}
+
+.timeline-clip.drop-target {
+  border: 2px dashed #4a90e2;
+}
+
+.clip-thumbnail {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.3;
+}
+
+.clip-label {
+  position: relative;
+  font-size: 11px;
+  font-weight: 500;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.clip-duration {
+  position: relative;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.7);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}

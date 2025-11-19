@@ -13,6 +13,8 @@ import {
 import StatusSelector from './StatusSelector';
 import StatusFilter from './StatusFilter';
 import { updateShotStatus } from '../utils/statusApi';
+import { ModificationConfirmDialog } from './ModificationConfirmDialog';
+import { useModificationConfirm } from '../hooks/useModificationConfirm';
 import './StoryboardView.css';
 
 const StoryboardView = () => {
@@ -114,18 +116,53 @@ const StoryboardView = () => {
     }
   };
 
+  // Modification confirm dialog for shot
+  const [shotToUpdate, setShotToUpdate] = useState<Shot | null>(null);
+  const { dialogProps: shotDialogProps, showConfirmDialog: showShotConfirmDialog } = useModificationConfirm({
+    entityType: 'shot',
+    entityId: shotToUpdate?.id || '',
+    entityName: shotToUpdate?.shotId || 'Shot',
+    onConfirm: async (refreshDownstream) => {
+      if (!shotToUpdate) return;
+      
+      try {
+        await shotApi.update(shotToUpdate.id, shotForm);
+        
+        if (refreshDownstream) {
+          // 批量刷新关键帧和视频片段
+          try {
+            const refreshResponse = await fetch(`/api/shots/${shotToUpdate.id}/batch-refresh`, {
+              method: 'POST',
+            });
+            
+            if (refreshResponse.ok) {
+              const refreshData = await refreshResponse.json();
+              alert(`批量刷新完成：${refreshData.summary.completed}/${refreshData.summary.total} 成功`);
+            } else {
+              console.error('批量刷新失败');
+            }
+          } catch (refreshErr) {
+            console.error('批量刷新错误:', refreshErr);
+          }
+        }
+        
+        setEditingShot(null);
+        setShotToUpdate(null);
+        resetShotForm();
+        await loadData();
+        alert('镜头更新成功');
+      } catch (err: any) {
+        alert(err.response?.data?.error?.message || '更新镜头失败');
+      }
+    }
+  });
+
   const handleUpdateShot = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingShot) return;
 
-    try {
-      await shotApi.update(editingShot.id, shotForm);
-      setEditingShot(null);
-      resetShotForm();
-      await loadData();
-    } catch (err: any) {
-      alert(err.response?.data?.error?.message || '更新镜头失败');
-    }
+    setShotToUpdate(editingShot);
+    showShotConfirmDialog();
   };
 
   const handleDeleteShot = async (shotId: string) => {
@@ -940,6 +977,9 @@ const StoryboardView = () => {
           </div>
         </div>
       )}
+
+      {/* Modification Confirm Dialog */}
+      <ModificationConfirmDialog {...shotDialogProps} />
     </div>
   );
 };

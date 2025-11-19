@@ -1,0 +1,85 @@
+.playback-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: #252525;
+  border-top: 1px solid #444;
+  border-bottom: 1px solid #444;
+}
+
+.controls-left,
+.controls-center,
+.controls-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.control-btn {
+  width: 36px;
+  height: 36px;
+  background: #333;
+  border: 1px solid #555;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.control-btn:hover {
+  background: #444;
+  border-color: #666;
+}
+
+.control-btn:active {
+  transform: scale(0.95);
+}
+
+.control-btn.play-btn {
+  width: 44px;
+  height: 44px;
+  background: #4a90e2;
+  border-color: #357abd;
+  font-size: 20px;
+}
+
+.control-btn.play-btn:hover {
+  background: #357abd;
+}
+
+.time-display {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  color: #fff;
+  min-width: 80px;
+  text-align: center;
+}
+
+.time-separator {
+  color: #666;
+}
+
+.speed-label {
+  color: #aaa;
+  font-size: 12px;
+}
+
+.speed-select {
+  padding: 6px 12px;
+  background: #333;
+  border: 1px solid #555;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.speed-select:hover {
+  background: #444;
+  border-color: #666;
+}

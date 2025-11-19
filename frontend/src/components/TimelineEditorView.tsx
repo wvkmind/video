@@ -1,6 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 import { api, clipApi, shotApi, Shot, Clip, FrameMismatchResult } from '../services/api';
+import { TimelineRuler } from './timeline/TimelineRuler';
+import { TimelinePlayhead } from './timeline/TimelinePlayhead';
+import { TimelineTrack, TimelineClip as TrackClip } from './timeline/TimelineTrack';
+import { ClipTrimmer } from './timeline/ClipTrimmer';
+import { TransitionEditor, TransitionMarker, Transition } from './timeline/TransitionEditor';
+import { PlaybackControls } from './timeline/PlaybackControls';
+import { TimelineZoom } from './timeline/TimelineZoom';
+import { ConflictWarning } from './timeline/ConflictWarning';
+import { AudioImporter } from './timeline/AudioImporter';
+import { detectAllConflicts, autoFixConflicts, ConflictInfo } from '../utils/timelineConflictDetector';
 import './TimelineEditorView.css';
 
 interface TimelineClip {
@@ -52,6 +64,22 @@ export const TimelineEditorView: React.FC = () => {
   const [selectedTransition, setSelectedTransition] = useState<TransitionPoint | null>(null);
   const [mismatchResults, setMismatchResults] = useState<Map<string, FrameMismatchResult>>(new Map());
   const [checkingMismatch, setCheckingMismatch] = useState(false);
+
+  // New timeline editor state
+  const [currentTime, setCurrentTime] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [zoom, setZoom] = useState(50); // pixels per second
+  const [selectedClip, setSelectedClip] = useState<TrackClip | null>(null);
+  const [showTrimmer, setShowTrimmer] = useState(false);
+  const [transitions, setTransitions] = useState<Transition[]>([]);
+  const [editingTransition, setEditingTransition] = useState<Transition | null>(null);
+  const [showTransitionEditor, setShowTransitionEditor] = useState(false);
+  const [conflicts, setConflicts] = useState<ConflictInfo[]>([]);
+  const [showConflicts, setShowConflicts] = useState(true);
+  
+  const timelineContainerRef = useRef<HTMLDivElement>(null);
+  const playbackIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (projectId) {
@@ -256,6 +284,208 @@ export const TimelineEditorView: React.FC = () => {
       alert(`恢复版本失败: ${error.response?.data?.error || error.message}`);
     }
   };
+
+  // New timeline editor handlers
+  const getTotalDuration = (): number => {
+    if (!timeline) return 0;
+    const videoTrack = timeline.tracks.find(t => t.type === 'video');
+    if (!videoTrack || videoTrack.clips.length === 0) return 0;
+    
+    const lastClip = videoTrack.clips.reduce((max, clip) => 
+      (clip.endTime > max.endTime ? clip : max), videoTrack.clips[0]);
+    return lastClip.endTime;
+  };
+
+  const handlePlay = () => {
+    setIsPlaying(true);
+    playbackIntervalRef.current = window.setInterval(() => {
+      setCurrentTime(prev => {
+        const newTime = prev + (0.033 * playbackSpeed); // ~30fps
+        if (newTime >= getTotalDuration()) {
+          handleStop();
+          return getTotalDuration();
+        }
+        return newTime;
+      });
+    }, 33);
+  };
+
+  const handlePause = () => {
+    setIsPlaying(false);
+    if (playbackIntervalRef.current) {
+      clearInterval(playbackIntervalRef.current);
+      playbackIntervalRef.current = null;
+    }
+  };
+
+  const handleStop = () => {
+    handlePause();
+    setCurrentTime(0);
+  };
+
+  const handleSeek = (time: number) => {
+    setCurrentTime(Math.max(0, Math.min(time, getTotalDuration())));
+  };
+
+  const handleFrameStep = (direction: 'forward' | 'backward') => {
+    const frameTime = 1 / 30; // 30fps
+    const newTime = direction === 'forward' 
+      ? currentTime + frameTime 
+      : currentTime - frameTime;
+    handleSeek(newTime);
+  };
+
+  const handleZoomChange = (newZoom: number) => {
+    setZoom(newZoom);
+  };
+
+  const handleFitToWindow = () => {
+    if (!timelineContainerRef.current) return;
+    const containerWidth = timelineContainerRef.current.clientWidth - 100; // Account for track labels
+    const duration = getTotalDuration();
+    if (duration > 0) {
+      setZoom(containerWidth / duration);
+    }
+  };
+
+  const convertToTrackClips = (timelineClips: TimelineClip[]): TrackClip[] => {
+    return timelineClips.map(clip => ({
+      id: clip.id,
+      startTime: clip.startTime,
+      duration: clip.endTime - clip.startTime,
+      label: `Clip ${clip.clipId}`,
+      color: '#4a90e2',
+    }));
+  };
+
+  const handleClipClick = (clip: TrackClip) => {
+    setSelectedClip(clip);
+  };
+
+  const handleClipTrim = (clipId: string, inPoint: number, outPoint: number) => {
+    if (!timeline) return;
+    
+    const updatedTracks = timeline.tracks.map(track => ({
+      ...track,
+      clips: track.clips.map(clip => 
+        clip.id === clipId 
+          ? { ...clip, inPoint, outPoint, endTime: clip.startTime + (outPoint - inPoint) }
+          : clip
+      ),
+    }));
+
+    setTimeline({ ...timeline, tracks: updatedTracks });
+    detectConflicts();
+  };
+
+  const handleClipReorder = (draggedId: string, targetId: string) => {
+    if (!timeline) return;
+
+    const videoTrack = timeline.tracks.find(t => t.type === 'video');
+    if (!videoTrack) return;
+
+    const draggedIndex = videoTrack.clips.findIndex(c => c.id === draggedId);
+    const targetIndex = videoTrack.clips.findIndex(c => c.id === targetId);
+
+    if (draggedIndex === -1 || targetIndex === -1) return;
+
+    const newClips = [...videoTrack.clips];
+    const [draggedClip] = newClips.splice(draggedIndex, 1);
+    newClips.splice(targetIndex, 0, draggedClip);
+
+    // Recalculate start times
+    let currentTime = 0;
+    newClips.forEach(clip => {
+      clip.startTime = currentTime;
+      clip.endTime = currentTime + (clip.outPoint - clip.inPoint);
+      currentTime = clip.endTime;
+    });
+
+    const updatedTracks = timeline.tracks.map(track =>
+      track.type === 'video' ? { ...track, clips: newClips } : track
+    );
+
+    setTimeline({ ...timeline, tracks: updatedTracks });
+    detectConflicts();
+  };
+
+  const detectConflicts = () => {
+    if (!timeline) return;
+
+    const videoTrack = timeline.tracks.find(t => t.type === 'video');
+    if (!videoTrack) return;
+
+    const trackClips = convertToTrackClips(videoTrack.clips);
+    const detectedConflicts = detectAllConflicts(trackClips);
+    setConflicts(detectedConflicts);
+  };
+
+  const handleFixConflict = (conflict: ConflictInfo) => {
+    if (!timeline) return;
+
+    const videoTrack = timeline.tracks.find(t => t.type === 'video');
+    if (!videoTrack) return;
+
+    const trackClips = convertToTrackClips(videoTrack.clips);
+    const fixedClips = autoFixConflicts(trackClips, [conflict]);
+
+    // Convert back to timeline clips
+    const fixedTimelineClips = videoTrack.clips.map((clip, index) => ({
+      ...clip,
+      startTime: fixedClips[index].startTime,
+      endTime: fixedClips[index].startTime + fixedClips[index].duration,
+    }));
+
+    const updatedTracks = timeline.tracks.map(track =>
+      track.type === 'video' ? { ...track, clips: fixedTimelineClips } : track
+    );
+
+    setTimeline({ ...timeline, tracks: updatedTracks });
+    detectConflicts();
+  };
+
+  const handleAddTransition = (fromClipId: string, toClipId: string) => {
+    const videoTrack = timeline?.tracks.find(t => t.type === 'video');
+    if (!videoTrack) return;
+
+    const fromClip = videoTrack.clips.find(c => c.id === fromClipId);
+    const toClip = videoTrack.clips.find(c => c.id === toClipId);
+
+    if (!fromClip || !toClip) return;
+
+    const newTransition: Transition = {
+      id: `transition-${Date.now()}`,
+      fromClipId,
+      toClipId,
+      type: 'cut',
+      duration: 0,
+      position: fromClip.endTime,
+    };
+
+    setEditingTransition(newTransition);
+    setShowTransitionEditor(true);
+  };
+
+  const handleSaveTransition = (transition: Transition) => {
+    setTransitions(prev => {
+      const existing = prev.findIndex(t => t.id === transition.id);
+      if (existing >= 0) {
+        const updated = [...prev];
+        updated[existing] = transition;
+        return updated;
+      }
+      return [...prev, transition];
+    });
+  };
+
+  const handleDeleteTransition = (transitionId: string) => {
+    setTransitions(prev => prev.filter(t => t.id !== transitionId));
+  };
+
+  // Detect conflicts on timeline changes
+  useEffect(() => {
+    detectConflicts();
+  }, [timeline]);
 
   if (loading) {
     return <div className="timeline-editor-view loading">加载中...</div>;
@@ -466,7 +696,171 @@ export const TimelineEditorView: React.FC = () => {
         </div>
       )}
 
-      <div className="timeline-content">
+      {/* Conflict Warning */}
+      {conflicts.length > 0 && showConflicts && (
+        <ConflictWarning
+          conflicts={conflicts}
+          onFixConflict={handleFixConflict}
+          onDismiss={() => setShowConflicts(false)}
+        />
+      )}
+
+      {/* Playback Controls */}
+      <PlaybackControls
+        isPlaying={isPlaying}
+        currentTime={currentTime}
+        duration={getTotalDuration()}
+        playbackSpeed={playbackSpeed}
+        onPlay={handlePlay}
+        onPause={handlePause}
+        onStop={handleStop}
+        onSeek={handleSeek}
+        onSpeedChange={setPlaybackSpeed}
+        onFrameStep={handleFrameStep}
+      />
+
+      {/* Audio Import Section */}
+      {projectId && (
+        <div className="audio-section">
+          <AudioImporter
+            projectId={projectId}
+            audioType="voiceover"
+            currentAudioPath={timeline?.voiceoverAudioPath || undefined}
+            onUploadSuccess={(audioPath, duration) => {
+              if (timeline) {
+                setTimeline({ ...timeline, voiceoverAudioPath: audioPath });
+              }
+              alert(`旁白音频上传成功${duration ? `，时长: ${duration.toFixed(2)}秒` : ''}`);
+            }}
+            onDelete={() => {
+              if (timeline) {
+                setTimeline({ ...timeline, voiceoverAudioPath: undefined });
+              }
+              alert('旁白音频已删除');
+            }}
+          />
+          <AudioImporter
+            projectId={projectId}
+            audioType="bgm"
+            currentAudioPath={timeline?.bgmAudioPath || undefined}
+            onUploadSuccess={(audioPath, duration) => {
+              if (timeline) {
+                setTimeline({ ...timeline, bgmAudioPath: audioPath });
+              }
+              alert(`背景音乐上传成功${duration ? `，时长: ${duration.toFixed(2)}秒` : ''}`);
+            }}
+            onDelete={() => {
+              if (timeline) {
+                setTimeline({ ...timeline, bgmAudioPath: undefined });
+              }
+              alert('背景音乐已删除');
+            }}
+          />
+        </div>
+      )}
+
+      {/* Timeline Zoom Controls */}
+      <div className="timeline-controls">
+        <TimelineZoom
+          zoom={zoom}
+          minZoom={10}
+          maxZoom={200}
+          onZoomChange={handleZoomChange}
+          onFitToWindow={handleFitToWindow}
+        />
+      </div>
+
+      {/* Visual Timeline */}
+      <DndProvider backend={HTML5Backend}>
+        <div className="timeline-content" ref={timelineContainerRef}>
+          <div className="timeline-viewport">
+            {/* Timeline Ruler */}
+            <TimelineRuler
+              duration={getTotalDuration()}
+              pixelsPerSecond={zoom}
+              width={getTotalDuration() * zoom}
+            />
+
+            {/* Timeline Tracks */}
+            <div className="timeline-tracks">
+              {videoTrack && (
+                <TimelineTrack
+                  trackType="video"
+                  clips={convertToTrackClips(videoTrack.clips)}
+                  pixelsPerSecond={zoom}
+                  onClipClick={(clip) => {
+                    handleClipClick(clip);
+                    setShowTrimmer(true);
+                  }}
+                  onClipReorder={handleClipReorder}
+                />
+              )}
+
+              {audioTrack && audioTrack.clips.length > 0 && (
+                <TimelineTrack
+                  trackType="audio"
+                  clips={convertToTrackClips(audioTrack.clips)}
+                  pixelsPerSecond={zoom}
+                  onClipClick={handleClipClick}
+                />
+              )}
+            </div>
+
+            {/* Transition Markers */}
+            <div className="transition-markers-layer">
+              {transitions.map((transition) => (
+                <TransitionMarker
+                  key={transition.id}
+                  transition={transition}
+                  pixelsPerSecond={zoom}
+                  onClick={() => {
+                    setEditingTransition(transition);
+                    setShowTransitionEditor(true);
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Playhead */}
+            <TimelinePlayhead
+              currentTime={currentTime}
+              pixelsPerSecond={zoom}
+              height={200}
+              onSeek={handleSeek}
+            />
+          </div>
+        </div>
+      </DndProvider>
+
+      {/* Clip Trimmer Modal */}
+      {showTrimmer && selectedClip && (
+        <ClipTrimmer
+          clipId={selectedClip.id}
+          clipName={selectedClip.label}
+          inPoint={0}
+          outPoint={selectedClip.duration}
+          maxDuration={selectedClip.duration}
+          onUpdate={handleClipTrim}
+          onClose={() => setShowTrimmer(false)}
+        />
+      )}
+
+      {/* Transition Editor Modal */}
+      {showTransitionEditor && editingTransition && (
+        <TransitionEditor
+          transition={editingTransition}
+          onSave={handleSaveTransition}
+          onDelete={handleDeleteTransition}
+          onClose={() => {
+            setShowTransitionEditor(false);
+            setEditingTransition(null);
+          }}
+        />
+      )}
+
+      {/* Legacy Simple View (for reference) */}
+      <details className="legacy-view">
+        <summary>简单列表视图</summary>
         <div className="track-container">
           <div className="track-header">
             <h3>视频轨道</h3>
@@ -492,28 +886,7 @@ export const TimelineEditorView: React.FC = () => {
             )}
           </div>
         </div>
-
-        <div className="track-container">
-          <div className="track-header">
-            <h3>音频轨道</h3>
-            <span className="track-info">{audioTrack?.clips.length || 0} 个片段</span>
-          </div>
-          <div className="track-clips">
-            {timeline.voiceoverAudioPath ? (
-              <div className="audio-file">
-                <span>旁白音频: {timeline.voiceoverAudioPath}</span>
-              </div>
-            ) : (
-              <div className="empty-track">暂无音频</div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="timeline-info">
-        <p>提示：完整的拖拽编辑、音频波形显示等高级功能将在后续版本中实现</p>
-        <p>当前版本支持基本的时间线管理、版本控制和视频导出功能</p>
-      </div>
+      </details>
     </div>
   );
 };

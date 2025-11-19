@@ -13,6 +13,8 @@ import llmRoutes from './llmRoutes';
 import systemConfigRoutes from './systemConfigRoutes';
 import statusRoutes from './statusRoutes';
 import dependencyRoutes from './dependencyRoutes';
+import audioRoutes from './audioRoutes';
+import batchRefreshRoutes from './batchRefreshRoutes';
 
 const router = Router();
 
@@ -61,5 +63,11 @@ router.use('/status', statusRoutes);
 
 // Mount dependency routes
 router.use('/dependencies', dependencyRoutes);
+
+// Mount audio routes
+router.use('/', audioRoutes);
+
+// Mount batch refresh routes
+router.use('/', batchRefreshRoutes);
 
 export default router;

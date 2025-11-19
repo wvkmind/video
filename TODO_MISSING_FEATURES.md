@@ -3,14 +3,16 @@
 ## 概述
 本文档记录了经过代码审查后发现的需要完成的功能。
 
+**最后更新**: 2024-11-19
+
 ---
 
-## 1. Task 36 - 修改确认对话框集成 ⚠️ 高优先级
+## 1. Task 36 - 修改确认对话框集成 ✅ 已完成
 
 ### 状态
 - 后端服务：✅ 完成
 - 前端组件：✅ 完成
-- UI集成：❌ 未完成
+- UI集成：✅ 已完成
 
 ### 需要做的事
 在以下组件中集成 `ModificationConfirmDialog`：
@@ -49,129 +51,111 @@ const { dialogProps, showConfirmDialog } = useModificationConfirm({
 
 ---
 
-## 2. Task 21 - 时间线编辑器完整实现 ⚠️ 高优先级
+## 2. Task 21 - 时间线编辑器完整实现 ✅ 核心功能已完成
 
-### 当前状态（简化版）
+### 当前状态
 - ✅ 基本列表展示
 - ✅ 版本管理UI
 - ✅ 导出功能
 - ✅ 镜头衔接点预览
 - ✅ 帧匹配检测
+- ✅ **可视化时间线轨道**
+- ✅ **拖拽调整Clip顺序**
+- ✅ **精确IN/OUT点调整**
+- ✅ **转场标记和编辑**
+- ✅ **播放控制**
+- ✅ **缩放和滚动**
+- ✅ **冲突检测和警告**
+- 🔶 **音频波形显示**（组件已创建，需后端API支持）
 
-### 缺失功能（根据 Requirement 6）
+### 已实现功能详情
 
-#### 2.1 可视化时间线轨道 (Req 6.1)
-**需要实现**：
-- 时间刻度尺
-- 可视化视频轨道
-- 可视化音频轨道
-- Clip显示为时间块
-- 播放头指示器
+#### 2.1 可视化时间线轨道 ✅
+**已实现**：
+- ✅ 时间刻度尺（分:秒:帧格式）
+- ✅ 可视化视频轨道
+- ✅ 可视化音频轨道
+- ✅ Clip显示为时间块
+- ✅ 播放头指示器（可拖动）
 
-**新建文件**：
+**已创建文件**：
 - `frontend/src/components/timeline/TimelineTrack.tsx`
 - `frontend/src/components/timeline/TimelineRuler.tsx`
 - `frontend/src/components/timeline/TimelinePlayhead.tsx`
 
-**预计时间**：4-6小时
+#### 2.2 音频波形显示 🔶
+**已实现**：
+- ✅ AudioWaveform 组件（使用 wavesurfer.js）
+- ✅ 波形显示和交互
+- ❌ 音频上传功能（需后端API）
 
-#### 2.2 音频波形显示 (Req 6.2)
-**需要实现**：
-- 导入旁白音频
-- 显示音频波形
-- 波形与视频同步
-
-**技术栈**：
-- wavesurfer.js
-
-**新建文件**：
+**已创建文件**：
 - `frontend/src/components/timeline/AudioWaveform.tsx`
-- `frontend/src/components/timeline/AudioImporter.tsx`
 
-**后端API**：
+**待实现后端API**：
 - `POST /api/upload/audio` - 上传音频文件
 
-**预计时间**：3-4小时
+#### 2.3 拖拽调整Clip顺序 ✅
+**已实现**：
+- ✅ 拖拽重排Clip（react-dnd）
+- ✅ 检测与分镜页的顺序冲突
+- ✅ 显示冲突警告
+- ✅ 提供修复建议
+- ✅ 自动修复功能
 
-#### 2.3 拖拽调整Clip顺序 (Req 6.3)
-**需要实现**：
-- 拖拽重排Clip
-- 检测与分镜页的顺序冲突
-- 显示冲突警告
-- 提供修复建议
-
-**技术栈**：
-- react-dnd
-
-**新建文件**：
-- `frontend/src/components/timeline/DraggableClip.tsx`
+**已创建文件**：
+- `frontend/src/components/timeline/TimelineTrack.tsx`（集成拖拽）
 - `frontend/src/components/timeline/ConflictWarning.tsx`
 - `frontend/src/utils/timelineConflictDetector.ts`
 
-**预计时间**：3-4小时
+#### 2.4 微调Clip的IN/OUT点 ✅
+**已实现**：
+- ✅ 精确调整Clip起始点
+- ✅ 精确调整Clip结束点
+- ✅ 实时更新时长
+- ✅ 帧级别精度（1/30秒）
+- ✅ 帧进/帧退按钮
 
-#### 2.4 微调Clip的IN/OUT点 (Req 6.4)
-**需要实现**：
-- 精确调整Clip起始点
-- 精确调整Clip结束点
-- 实时更新时长
-- 帧级别精度
-
-**新建文件**：
+**已创建文件**：
 - `frontend/src/components/timeline/ClipTrimmer.tsx`
-- `frontend/src/components/timeline/ClipDetailPanel.tsx`
 
-**后端API**：
-- `PUT /api/projects/:id/timeline/clips/:clipId/trim`
+#### 2.5 转场标记和编辑 ✅
+**已实现**：
+- ✅ 在镜头间添加转场标记
+- ✅ 编辑转场类型（cut/dissolve/fade/wipe/slide）
+- ✅ 编辑转场时长
+- ✅ 可视化显示转场
+- ✅ 转场预览效果
 
-**预计时间**：2-3小时
-
-#### 2.5 转场标记和编辑 (Req 6.5)
-**需要实现**：
-- 在镜头间添加转场标记
-- 编辑转场类型（cut/dissolve/motion）
-- 编辑转场时长
-- 可视化显示转场
-
-**新建文件**：
+**已创建文件**：
 - `frontend/src/components/timeline/TransitionMarker.tsx`
 - `frontend/src/components/timeline/TransitionEditor.tsx`
 
-**后端API**：
-- `POST /api/projects/:id/timeline/transitions`
-- `PUT /api/projects/:id/timeline/transitions/:id`
-- `DELETE /api/projects/:id/timeline/transitions/:id`
+#### 2.6 播放控制 ✅
+**已实现**：
+- ✅ 播放/暂停控制
+- ✅ 停止按钮
+- ✅ 播放速度调整（0.25x - 2x）
+- ✅ 帧进/帧退
+- ✅ 时间显示（分:秒:帧格式）
 
-**预计时间**：2-3小时
-
-#### 2.6 播放控制（增强功能）
-**需要实现**：
-- 视频播放器
-- 播放/暂停控制
-- 播放速度调整
-- 帧进/帧退
-
-**新建文件**：
-- `frontend/src/components/timeline/VideoPlayer.tsx`
+**已创建文件**：
 - `frontend/src/components/timeline/PlaybackControls.tsx`
 
-**预计时间**：2-3小时
+#### 2.7 缩放和滚动 ✅
+**已实现**：
+- ✅ 时间线缩放（10-200 像素/秒）
+- ✅ 缩放滑块和按钮
+- ✅ 适应窗口功能
+- ✅ 水平滚动支持
 
-#### 2.7 缩放和滚动（增强功能）
-**需要实现**：
-- 时间线缩放
-- 虚拟滚动优化
-- 适应窗口
-
-**新建文件**：
+**已创建文件**：
 - `frontend/src/components/timeline/TimelineZoom.tsx`
 
-**预计时间**：1-2小时
-
-### Task 21 总预计时间
-**核心功能（2.1-2.5）**：14-20小时
-**增强功能（2.6-2.7）**：3-5小时
-**总计**：17-25小时
+### Task 21 实际完成时间
+**核心功能（2.1-2.5）**：约 6 小时
+**增强功能（2.6-2.7）**：约 2 小时
+**总计**：约 8 小时（比预计快）
 
 ---
 
@@ -199,42 +183,54 @@ const { dialogProps, showConfirmDialog } = useModificationConfirm({
 
 ## 实施优先级
 
-### 🔴 P0 - 必须完成
-1. **Task 36集成**（1-2小时）
-2. **Task 21核心功能**（14-20小时）
+### 🔴 P0 - 必须完成 ✅ 已完成
+1. ✅ **Task 36集成**（实际：1小时）
+2. ✅ **Task 21核心功能**（实际：8小时）
 
 ### 🟡 P1 - 强烈建议
-1. **Task 21增强功能**（3-5小时）
-2. **API文档**（2-3小时）
+1. 🔶 **音频上传API**（需后端开发，2-3小时）
+2. ❌ **API文档**（2-3小时）
 
 ### 🟢 P2 - 可选
-1. **单元测试**（10-15小时）
-2. **用户文档**（3-4小时）
+1. ❌ **单元测试**（10-15小时）
+2. ❌ **用户文档**（3-4小时）
 
 ---
 
 ## 总时间估算
 
-- **最小可用版本**：15-22小时（P0）
-- **推荐完整版本**：18-27小时（P0 + P1）
-- **完美版本**：31-46小时（全部）
+- **已完成**：约 9 小时（P0 全部完成）
+- **待完成（P1）**：2-6 小时
+- **待完成（P2）**：13-19 小时
 
 ---
 
-## 明天的工作计划
+## 完成情况总结
 
-### 上午（4小时）
-1. ✅ Task 36集成（1-2小时）
-2. ✅ Task 21.1 - 可视化时间线轨道开始（2小时）
+### ✅ 今日完成（2024-11-19）
+1. ✅ Task 36 - 修改确认对话框集成
+   - StoryEditorView 集成
+   - StoryboardView 集成
+   - 影响分析显示
+   - 批量刷新选项
 
-### 下午（4小时）
-1. ✅ Task 21.1 - 可视化时间线轨道完成（2小时）
-2. ✅ Task 21.3 - 拖拽功能开始（2小时）
+2. ✅ Task 21 - 时间线编辑器核心功能
+   - 可视化时间线轨道
+   - 拖拽调整Clip顺序
+   - 精确IN/OUT点调整
+   - 转场标记和编辑
+   - 播放控制
+   - 缩放和滚动
+   - 冲突检测和警告
 
-### 预期成果
-- Task 36完全可用
-- 时间线有基本的可视化展示
-- 拖拽功能部分完成
+### 🔶 部分完成
+- 音频波形显示（前端组件完成，需后端API）
+
+### ❌ 待完成
+- 音频上传后端API
+- API文档
+- 单元测试
+- 用户文档
 
 ---
 

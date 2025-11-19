@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { storyApi, sceneApi, projectApi, llmApi, Story, Scene, Project } from '../services/api';
+import { ModificationConfirmDialog } from './ModificationConfirmDialog';
+import { useModificationConfirm } from '../hooks/useModificationConfirm';
 import './StoryEditorView.css';
 
 const StoryEditorView = () => {
@@ -90,19 +92,48 @@ const StoryEditorView = () => {
     }
   };
 
-  const handleSaveStory = async () => {
-    if (!projectId) return;
-    
-    try {
-      setSaving(true);
-      await storyApi.update(projectId, storyForm);
-      await loadData();
-      alert('故事大纲保存成功');
-    } catch (err: any) {
-      alert(err.response?.data?.error?.message || '保存故事大纲失败');
-    } finally {
-      setSaving(false);
+  // Modification confirm dialog for story
+  const { dialogProps: storyDialogProps, showConfirmDialog: showStoryConfirmDialog } = useModificationConfirm({
+    entityType: 'story',
+    entityId: projectId || '',
+    entityName: project?.name || 'Story',
+    onConfirm: async (refreshDownstream) => {
+      if (!projectId) return;
+      
+      try {
+        setSaving(true);
+        await storyApi.update(projectId, storyForm);
+        
+        if (refreshDownstream) {
+          // 批量刷新场景和镜头
+          try {
+            const refreshResponse = await fetch(`/api/projects/${projectId}/batch-refresh/story`, {
+              method: 'POST',
+            });
+            
+            if (refreshResponse.ok) {
+              const refreshData = await refreshResponse.json();
+              alert(`批量刷新完成：${refreshData.summary.completed}/${refreshData.summary.total} 成功`);
+            } else {
+              console.error('批量刷新失败');
+            }
+          } catch (refreshErr) {
+            console.error('批量刷新错误:', refreshErr);
+          }
+        }
+        
+        await loadData();
+        alert('故事大纲保存成功');
+      } catch (err: any) {
+        alert(err.response?.data?.error?.message || '保存故事大纲失败');
+      } finally {
+        setSaving(false);
+      }
     }
+  });
+
+  const handleSaveStory = async () => {
+    showStoryConfirmDialog();
   };
 
   const handleCreateScene = async (e: React.FormEvent) => {
@@ -119,18 +150,53 @@ const StoryEditorView = () => {
     }
   };
 
+  // Modification confirm dialog for scene
+  const [sceneToUpdate, setSceneToUpdate] = useState<Scene | null>(null);
+  const { dialogProps: sceneDialogProps, showConfirmDialog: showSceneConfirmDialog } = useModificationConfirm({
+    entityType: 'scene',
+    entityId: sceneToUpdate?.id || '',
+    entityName: sceneToUpdate?.title || 'Scene',
+    onConfirm: async (refreshDownstream) => {
+      if (!sceneToUpdate) return;
+      
+      try {
+        await sceneApi.update(sceneToUpdate.id, sceneForm);
+        
+        if (refreshDownstream) {
+          // 批量刷新镜头
+          try {
+            const refreshResponse = await fetch(`/api/scenes/${sceneToUpdate.id}/batch-refresh`, {
+              method: 'POST',
+            });
+            
+            if (refreshResponse.ok) {
+              const refreshData = await refreshResponse.json();
+              alert(`批量刷新完成：${refreshData.summary.completed}/${refreshData.summary.total} 成功`);
+            } else {
+              console.error('批量刷新失败');
+            }
+          } catch (refreshErr) {
+            console.error('批量刷新错误:', refreshErr);
+          }
+        }
+        
+        setEditingScene(null);
+        setSceneToUpdate(null);
+        resetSceneForm();
+        await loadData();
+        alert('场景更新成功');
+      } catch (err: any) {
+        alert(err.response?.data?.error?.message || '更新场景失败');
+      }
+    }
+  });
+
   const handleUpdateScene = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingScene) return;
     
-    try {
-      await sceneApi.update(editingScene.id, sceneForm);
-      setEditingScene(null);
-      resetSceneForm();
-      await loadData();
-    } catch (err: any) {
-      alert(err.response?.data?.error?.message || '更新场景失败');
-    }
+    setSceneToUpdate(editingScene);
+    showSceneConfirmDialog();
   };
 
   const handleDeleteScene = async (sceneId: string) => {
@@ -714,6 +780,10 @@ const StoryEditorView = () => {
           </div>
         </div>
       )}
+
+      {/* Modification Confirm Dialogs */}
+      <ModificationConfirmDialog {...storyDialogProps} />
+      <ModificationConfirmDialog {...sceneDialogProps} />
     </div>
   );
 };

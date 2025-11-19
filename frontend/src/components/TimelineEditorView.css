@@ -646,3 +646,91 @@
     padding: 20px;
   }
 }
+
+/* Visual Timeline Styles */
+.timeline-controls {
+  background: white;
+  padding: 15px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.timeline-viewport {
+  position: relative;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: #1a1a1a;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.timeline-tracks {
+  position: relative;
+}
+
+.transition-markers-layer {
+  position: absolute;
+  top: 30px;
+  left: 80px;
+  right: 0;
+  height: calc(100% - 30px);
+  pointer-events: none;
+}
+
+.transition-markers-layer > * {
+  pointer-events: all;
+}
+
+.legacy-view {
+  margin-top: 30px;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.legacy-view summary {
+  cursor: pointer;
+  font-weight: 500;
+  color: #666;
+  padding: 10px;
+  user-select: none;
+}
+
+.legacy-view summary:hover {
+  color: #333;
+}
+
+.legacy-view[open] summary {
+  margin-bottom: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* Scrollbar styling for timeline */
+.timeline-viewport::-webkit-scrollbar {
+  height: 12px;
+}
+
+.timeline-viewport::-webkit-scrollbar-track {
+  background: #252525;
+}
+
+.timeline-viewport::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 6px;
+}
+
+.timeline-viewport::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+/* Audio Section */
+.audio-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
