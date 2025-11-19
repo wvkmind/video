@@ -4,6 +4,7 @@ import {
   shotApi,
   sceneApi,
   projectApi,
+  llmApi,
   Shot,
   Scene,
   Project,
@@ -173,6 +174,45 @@ const StoryboardView = () => {
       await loadData();
     } catch (err: any) {
       alert(err.response?.data?.error?.message || '删除镜头失败');
+    }
+  };
+
+  const [generatingShots, setGeneratingShots] = useState(false);
+
+  const handleGenerateShots = async () => {
+    if (!selectedSceneId) {
+      alert('请先选择一个场景');
+      return;
+    }
+
+    const selectedScene = scenes.find(s => s.id === selectedSceneId);
+    if (!selectedScene) return;
+
+    const sceneShots = shots.filter(s => s.sceneId === selectedSceneId);
+    if (sceneShots.length > 0) {
+      if (!confirm('该场景已有分镜，生成新分镜将添加到现有列表中。是否继续？')) {
+        return;
+      }
+    }
+
+    try {
+      setGeneratingShots(true);
+      console.log('Generating shots for scene:', selectedSceneId);
+      
+      const res = await llmApi.generateShots(selectedSceneId);
+      console.log('Generated shots response:', res.data);
+      
+      alert(`成功生成 ${res.data.count} 个分镜！`);
+      
+      console.log('Reloading data...');
+      await loadData();
+      console.log('Data reloaded, current shots:', shots.length);
+    } catch (err: any) {
+      console.error('Error generating shots:', err);
+      const errorMsg = err.response?.data?.error?.message || '生成分镜列表失败';
+      alert(errorMsg);
+    } finally {
+      setGeneratingShots(false);
     }
   };
 
@@ -469,6 +509,14 @@ const StoryboardView = () => {
                 </button>
               </>
             )}
+            <button
+              onClick={handleGenerateShots}
+              disabled={generatingShots || !selectedSceneId}
+              className="btn-secondary"
+              title="基于场景信息 AI 生成分镜列表"
+            >
+              {generatingShots ? '生成中...' : '🤖 AI 生成分镜'}
+            </button>
             <button
               onClick={() => {
                 setEditingShot(null);

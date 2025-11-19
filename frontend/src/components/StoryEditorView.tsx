@@ -341,6 +341,36 @@ const StoryEditorView = () => {
     setSelectedSceneForCompress(scene);
     setCompressTargetDuration(scene.estimatedDuration || 30);
     setShowCompressDialog(true);
+  };
+
+  const [generatingScenes, setGeneratingScenes] = useState(false);
+
+  const handleGenerateScenes = async () => {
+    if (!projectId) return;
+
+    if (!storyForm.hook && !storyForm.middleStructure && !storyForm.ending) {
+      alert('请先生成或填写故事大纲');
+      return;
+    }
+
+    if (scenes.length > 0) {
+      if (!confirm('已有场景列表，生成新场景将添加到现有列表中。是否继续？')) {
+        return;
+      }
+    }
+
+    try {
+      setGeneratingScenes(true);
+      const res = await llmApi.generateScenes(projectId);
+      
+      alert(`成功生成 ${res.data.count} 个场景！`);
+      await loadData();
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.error?.message || '生成场景列表失败';
+      alert(errorMsg);
+    } finally {
+      setGeneratingScenes(false);
+    }
   };;
 
   if (loading) {
@@ -423,16 +453,26 @@ const StoryEditorView = () => {
       <div className="scenes-section">
         <div className="section-header">
           <h2>场景列表</h2>
-          <button
-            onClick={() => {
-              setEditingScene(null);
-              resetSceneForm();
-              setShowSceneForm(true);
-            }}
-            className="btn-primary"
-          >
-            + 新建场景
-          </button>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={handleGenerateScenes}
+              disabled={generatingScenes || (!storyForm.hook && !storyForm.middleStructure && !storyForm.ending)}
+              className="btn-secondary"
+              title="基于故事大纲 AI 生成场景列表"
+            >
+              {generatingScenes ? '生成中...' : '🤖 AI 生成场景'}
+            </button>
+            <button
+              onClick={() => {
+                setEditingScene(null);
+                resetSceneForm();
+                setShowSceneForm(true);
+              }}
+              className="btn-primary"
+            >
+              + 新建场景
+            </button>
+          </div>
         </div>
 
         <div className="scenes-list">

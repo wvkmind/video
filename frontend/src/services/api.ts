@@ -44,7 +44,7 @@ export interface ListProjectsParams {
 }
 
 export interface ListProjectsResponse {
-  projects: Project[];
+  data: Project[]; // 后端返回的是 data 字段
   total: number;
   page: number;
   limit: number;
@@ -466,12 +466,28 @@ export interface CompressVoiceoverResponse {
   targetDuration: number;
 }
 
+export interface GenerateScenesResponse {
+  scenes: Scene[];
+  count: number;
+}
+
+export interface GenerateShotsResponse {
+  shots: Shot[];
+  count: number;
+}
+
 export const llmApi = {
   generateStoryOutline: (projectId: string, params: GenerateStoryOutlineParams) =>
     api.post<GenerateStoryOutlineResponse>(`/projects/${projectId}/generate-story-outline`, params),
 
+  generateScenes: (projectId: string) =>
+    api.post<GenerateScenesResponse>(`/projects/${projectId}/generate-scenes`),
+
   generateSceneScript: (sceneId: string) =>
     api.post<GenerateScriptResponse>(`/scenes/${sceneId}/generate-script`),
+
+  generateShots: (sceneId: string) =>
+    api.post<GenerateShotsResponse>(`/scenes/${sceneId}/generate-shots`),
 
   optimizePrompt: (shotId: string) =>
     api.post<OptimizePromptResponse>(`/shots/${shotId}/optimize-prompt`),

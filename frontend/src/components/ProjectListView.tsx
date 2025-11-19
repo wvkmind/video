@@ -44,11 +44,16 @@ const ProjectListView = () => {
         status: statusFilter || undefined,
         type: typeFilter || undefined,
       });
-      setProjects(response.data.projects);
-      setTotal(response.data.total);
-      setTotalPages(response.data.totalPages);
+      
+      // 后端返回格式: { success: true, data: { data: [], total, page, limit, totalPages } }
+      const result = response.data.data || response.data;
+      setProjects(result.data || []);
+      setTotal(result.total || 0);
+      setTotalPages(result.totalPages || 1);
     } catch (err: any) {
+      console.error('Load projects error:', err);
       setError(err.response?.data?.error?.message || '加载项目列表失败');
+      setProjects([]); // 确保出错时也设置为空数组
     } finally {
       setLoading(false);
     }
@@ -380,6 +385,7 @@ const ProjectListView = () => {
                   required
                 >
                   <option value="">请选择</option>
+                  <option value="抖音短视频">🔥 抖音短视频 (15-60秒)</option>
                   <option value="产品介绍">产品介绍</option>
                   <option value="剧情短片">剧情短片</option>
                   <option value="MV">MV</option>
@@ -389,6 +395,32 @@ const ProjectListView = () => {
 
               <div className="form-group">
                 <label>目标时长（秒）*</label>
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '5px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, targetDuration: 15 })}
+                    className="btn-small"
+                    style={{ fontSize: '12px' }}
+                  >
+                    15秒
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, targetDuration: 30 })}
+                    className="btn-small"
+                    style={{ fontSize: '12px' }}
+                  >
+                    30秒
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, targetDuration: 60 })}
+                    className="btn-small"
+                    style={{ fontSize: '12px' }}
+                  >
+                    60秒
+                  </button>
+                </div>
                 <input
                   type="number"
                   value={formData.targetDuration}
@@ -398,16 +430,24 @@ const ProjectListView = () => {
                   min="1"
                   required
                 />
+                <small style={{ color: '#666', fontSize: '12px' }}>
+                  💡 推荐短视频: 15-60秒
+                </small>
               </div>
 
               <div className="form-group">
                 <label>目标风格</label>
-                <input
-                  type="text"
+                <select
                   value={formData.targetStyle}
                   onChange={(e) => setFormData({ ...formData, targetStyle: e.target.value })}
-                  placeholder="例如：电影感、卡通风格"
-                />
+                >
+                  <option value="">请选择</option>
+                  <option value="TikTok/抖音">TikTok/抖音风格</option>
+                  <option value="Vlog">Vlog 风格</option>
+                  <option value="电影感">电影感</option>
+                  <option value="卡通动画">卡通动画</option>
+                  <option value="纪录片">纪录片</option>
+                </select>
               </div>
 
               <div className="form-group">

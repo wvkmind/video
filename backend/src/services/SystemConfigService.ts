@@ -128,12 +128,19 @@ export class SystemConfigService {
 
     try {
       const axios = require('axios');
+      
+      console.log('Validating POE API with:', {
+        url: urlToTest,
+        model: config.poeModel,
+        hasApiKey: !!keyToTest,
+      });
+
       const response = await axios.post(
         urlToTest,
         {
           model: config.poeModel,
           messages: [{ role: 'user', content: 'test' }],
-          max_tokens: 10,
+          max_tokens: 16,
         },
         {
           headers: {
@@ -150,8 +157,22 @@ export class SystemConfigService {
 
       return { valid: false, message: 'Poe API returned unexpected status' };
     } catch (error: any) {
+      console.error('POE API validation error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        code: error.code,
+      });
+
       if (error.response?.status === 401 || error.response?.status === 403) {
         return { valid: false, message: 'Invalid API key' };
+      }
+
+      if (error.response?.data) {
+        return {
+          valid: false,
+          message: `Poe API error: ${JSON.stringify(error.response.data)}`,
+        };
       }
 
       return {

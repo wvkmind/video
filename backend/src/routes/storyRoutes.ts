@@ -29,13 +29,16 @@ router.get('/:id/story', async (req: Request, res: Response) => {
     const story = await storyService.getStory(id);
 
     if (!story) {
-      return res.status(404).json({
-        error: {
-          code: 'STORY_NOT_FOUND',
-          message: `No story found for project ${id}`,
-        },
-        timestamp: new Date().toISOString(),
-        path: req.path,
+      // Return empty story structure for new projects instead of 404
+      return res.json({
+        id: null,
+        projectId: id,
+        hook: '',
+        middleStructure: '',
+        ending: '',
+        version: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       });
     }
 

@@ -208,4 +208,137 @@ router.post('/scenes/:id/compress-voiceover', async (req: Request, res: Response
   }
 });
 
+/**
+ * POST /api/projects/:id/generate-scenes - 生成场景列表
+ * Validates: Requirements 2.5
+ */
+router.post('/:id/generate-scenes', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Get story outline
+    const story = await storyService.getStory(id);
+    if (!story) {
+      return sendError(res, 404, 'STORY_NOT_FOUND', `Story for project ${id} not found`);
+    }
+
+    if (!story.hook && !story.middleStructure && !story.ending) {
+      return sendError(res, 400, 'VALIDATION_ERROR', 'Story outline is empty. Please generate or write a story outline first.');
+    }
+
+    // Generate scenes using LLM
+    const generatedScenes = await llmService.generateScenes({
+      hook: story.hook || '',
+      middleStructure: story.middleStructure || '',
+      ending: story.ending || '',
+    });
+
+    // Create scenes in database
+    const createdScenes = [];
+    for (const sceneData of generatedScenes) {
+      const scene = await storyService.createScene(id, {
+        title: sceneData.title,
+        description: sceneData.description,
+        estimatedDuration: sceneData.estimatedDuration,
+      });
+      createdScenes.push(scene);
+    }
+
+    res.json({
+      scenes: createdScenes,
+      count: createdScenes.length,
+    });
+  } catch (error: any) {
+    console.error('Error generating scenes:', error);
+    if (error.message.includes('not found')) {
+      sendError(res, 404, 'STORY_NOT_FOUND', error.message);
+    } else if (error.message.includes('API key') || error.message.includes('POE_API_KEY')) {
+      sendError(res, 503, 'LLM_SERVICE_UNAVAILABLE', error.message);
+    } else {
+      sendError(res, 500, 'INTERNAL_ERROR', 'Failed to generate scenes');
+    }
+  }
+});
+
+/**
+ * POST /api/scenes/:id/generate-shots - 生成分镜列表
+ * Validates: Requirements 2.5
+ */
+router.post('/scenes/:id/generate-shots', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Get scene details
+    const scene = await storyService.getScene(id);
+    if (!scene) {
+      return sendError(res, 404, 'SCENE_NOT_FOUND', `Scene ${id} not found`);
+    }
+
+    // Generate shots using LLM
+    const generatedShots = await llmService.generateShots(
+      scene.title,
+      scene.description || '',
+      scene.voiceoverText
+    );
+
+    // Get existing shots for this scene to determine next shot number
+    const existingShots = await shotService.listShots(scene.projectId);
+    const sceneShots = existingShots.filter(s => s.sceneId === id);
+    let nextShotNumber = sceneShots.length + 1;
+
+    console.log(`Creating ${generatedShots.length} shots for scene ${scene.sceneNumber} (${id})`);
+    console.log(`Existing shots in scene: ${sceneShots.length}, next shot number: ${nextShotNumber}`);
+
+    // Create shots in database
+    const createdShots = [];
+    for (let i = 0; i < generatedShots.length; i++) {
+      const shotData = generatedShots[i];
+      const shotId = `S${scene.sceneNumber}-${nextShotNumber + i}`;
+      
+      console.log(`Creating shot ${shotId}:`, {
+        title: shotData.title,
+        duration: shotData.duration,
+      });
+      
+      // Combine title and description for the description field
+      const fullDescription = shotData.title 
+        ? `${shotData.title}: ${shotData.description || ''}`
+        : shotData.description;
+      
+      const shot = await shotService.createShot(scene.projectId, {
+        sceneId: id,
+        shotId: shotId,
+        description: fullDescription,
+        duration: shotData.duration,
+        shotType: 'medium', // Default shot type
+        environment: shotData.environment,
+        subject: shotData.subject,
+        action: shotData.action,
+        cameraMovement: shotData.cameraMovement,
+        lighting: shotData.lighting,
+        style: shotData.style,
+      });
+      
+      console.log(`Successfully created shot ${shot.id} with shotId ${shot.shotId}`);
+      createdShots.push(shot);
+    }
+
+    console.log(`Total shots created: ${createdShots.length}`);
+
+    res.json({
+      shots: createdShots,
+      count: createdShots.length,
+    });
+  } catch (error: any) {
+    console.error('Error generating shots:', error);
+    if (error.message.includes('not found')) {
+      sendError(res, 404, 'SCENE_NOT_FOUND', error.message);
+    } else if (error.message.includes('API key') || error.message.includes('POE_API_KEY')) {
+      sendError(res, 503, 'LLM_SERVICE_UNAVAILABLE', error.message);
+    } else {
+      sendError(res, 500, 'INTERNAL_ERROR', 'Failed to generate shots');
+    }
+  }
+});
+
 export default router;

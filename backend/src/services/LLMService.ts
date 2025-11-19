@@ -1,5 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import { config } from '../config/env';
+import { SystemConfigService } from './SystemConfigService';
 
 interface PoeMessage {
   role: 'system' | 'user' | 'assistant';
@@ -29,8 +30,10 @@ export class LLMService {
   private apiUrl: string;
   private maxRetries: number = 3;
   private retryDelay: number = 1000; // 1 second
+  private systemConfigService: SystemConfigService;
 
   constructor() {
+    this.systemConfigService = new SystemConfigService();
     this.apiKey = config.poe.apiKey;
     this.model = config.poe.model;
     this.apiUrl = config.poe.apiUrl;
@@ -46,6 +49,32 @@ export class LLMService {
   }
 
   /**
+   * Load configuration from system config (database)
+   */
+  private async loadConfig(): Promise<void> {
+    try {
+      const systemConfig = await this.systemConfigService.getConfig();
+      
+      // Use system config if available, otherwise fall back to env vars
+      if (systemConfig.poeApiKey) {
+        this.apiKey = systemConfig.poeApiKey;
+        this.client.defaults.headers['Authorization'] = `Bearer ${this.apiKey}`;
+      }
+      
+      if (systemConfig.poeModel) {
+        this.model = systemConfig.poeModel;
+      }
+      
+      if (systemConfig.poeApiUrl) {
+        this.apiUrl = systemConfig.poeApiUrl;
+        this.client.defaults.baseURL = this.apiUrl;
+      }
+    } catch (error) {
+      console.warn('Failed to load system config, using environment variables:', error);
+    }
+  }
+
+  /**
    * Generic method to call Poe API with retry logic
    */
   private async callPoeAPI(
@@ -53,6 +82,9 @@ export class LLMService {
     temperature: number = 0.7,
     maxTokens: number = 2000
   ): Promise<string> {
+    // Load config from database before each API call
+    await this.loadConfig();
+
     if (!this.apiKey) {
       throw new Error('POE_API_KEY is not configured. Please set it in environment variables or system config.');
     }
@@ -102,6 +134,7 @@ export class LLMService {
 
   /**
    * Generate story outline based on project description
+   * Optimized for short-form vertical videos (15-60 seconds)
    */
   async generateStoryOutline(projectDescription: string): Promise<{
     hook: string;
@@ -111,25 +144,22 @@ export class LLMService {
     const messages: PoeMessage[] = [
       {
         role: 'system',
-        content: 'You are a professional storytelling assistant. Generate engaging story outlines for video content.',
+        content: 'You are a TikTok/Douyin short video expert. Create punchy, attention-grabbing outlines for 15-60 second vertical videos.',
       },
       {
         role: 'user',
-        content: `Based on the following project description, generate a story outline with three parts:
-1. Hook (开场): An engaging opening that captures attention
-2. Middle Structure (中段结构): The main content and development
-3. Ending (结尾): A satisfying conclusion
+        content: `Create a story outline for a 15-60 second short video. Keep it simple and impactful.
 
-Project Description: ${projectDescription}
+Topic: ${projectDescription}
 
-Please provide the outline in the following format:
-Hook: [your hook here]
-Middle: [your middle structure here]
-Ending: [your ending here]`,
+Format:
+Hook: [3-5 second attention grabber - max 50 chars]
+Middle: [10-40 second main content - max 150 chars]
+Ending: [5-10 second call-to-action or punchline - max 50 chars]`,
       },
     ];
 
-    const response = await this.callPoeAPI(messages, 0.8, 1500);
+    const response = await this.callPoeAPI(messages, 0.8, 800);
 
     // Parse the response
     const hookMatch = response.match(/Hook:\s*(.+?)(?=\nMiddle:|$)/s);
@@ -145,6 +175,7 @@ Ending: [your ending here]`,
 
   /**
    * Generate scene script based on scene description and story outline
+   * Optimized for short-form videos
    */
   async generateSceneScript(
     sceneDescription: string,
@@ -153,24 +184,24 @@ Ending: [your ending here]`,
     const messages: PoeMessage[] = [
       {
         role: 'system',
-        content: 'You are a professional scriptwriter. Generate detailed scene scripts for video production.',
+        content: 'You are a TikTok/Douyin scriptwriter. Write punchy, conversational voiceovers for short videos. Keep it under 50 words.',
       },
       {
         role: 'user',
-        content: `Based on the following story outline and scene description, generate a detailed voiceover script for this scene.
+        content: `Write a short voiceover script (max 50 words, 5-15 seconds when spoken).
 
-Story Outline:
+Story context:
 Hook: ${storyOutline.hook}
 Middle: ${storyOutline.middleStructure}
 Ending: ${storyOutline.ending}
 
-Scene Description: ${sceneDescription}
+This scene: ${sceneDescription}
 
-Please write a natural, engaging voiceover script that fits this scene and aligns with the overall story. Keep it concise and suitable for video narration.`,
+Write in a casual, engaging tone. No fluff, just the key message.`,
       },
     ];
 
-    return await this.callPoeAPI(messages, 0.7, 1000);
+    return await this.callPoeAPI(messages, 0.7, 500);
   }
 
   /**
@@ -243,6 +274,167 @@ Provide only the compressed text without any explanation.`,
     ];
 
     return await this.callPoeAPI(messages, 0.3, 1000);
+  }
+
+  /**
+   * Generate scene list based on story outline
+   */
+  async generateScenes(storyOutline: {
+    hook: string;
+    middleStructure: string;
+    ending: string;
+  }): Promise<Array<{
+    title: string;
+    description: string;
+    estimatedDuration: number;
+  }>> {
+    const messages: PoeMessage[] = [
+      {
+        role: 'system',
+        content: 'You are a short-form video director specializing in 15-60 second TikTok/Douyin videos. You always respond with valid JSON arrays only. Keep everything ultra-concise.',
+      },
+      {
+        role: 'user',
+        content: `Generate 2-4 scenes for a short video (15-60 seconds total). Each scene should be 5-20 seconds.
+
+Story Outline:
+Hook: ${storyOutline.hook}
+Middle: ${storyOutline.middleStructure}
+Ending: ${storyOutline.ending}
+
+Return ONLY a JSON array (no markdown, no explanation):
+[
+  {
+    "title": "Scene title (max 30 chars)",
+    "description": "Brief description (max 100 chars)",
+    "estimatedDuration": 10
+  }
+]`,
+      },
+    ];
+
+    const response = await this.callPoeAPI(messages, 0.7, 3000);
+    
+    console.log('LLM response for scenes (length: ' + response.length + '):', response.substring(0, 500) + '...');
+    
+    try {
+      // Try to extract JSON from response
+      // Remove markdown code blocks if present
+      let cleanedResponse = response.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      
+      // Try to find JSON array
+      const jsonMatch = cleanedResponse.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        let jsonStr = jsonMatch[0];
+        
+        // Check if JSON is truncated (doesn't end with proper closing)
+        if (!jsonStr.trim().endsWith(']')) {
+          console.warn('JSON appears truncated, attempting to fix...');
+          // Try to close the last object and array
+          const lastComma = jsonStr.lastIndexOf(',');
+          if (lastComma > 0) {
+            jsonStr = jsonStr.substring(0, lastComma) + ']';
+          }
+        }
+        
+        const parsed = JSON.parse(jsonStr);
+        console.log('Successfully parsed scenes:', parsed.length, 'items');
+        return parsed;
+      }
+      
+      console.error('No JSON array found in response');
+      throw new Error('Failed to parse scene list from LLM response');
+    } catch (error: any) {
+      console.error('Failed to parse scene list:', error.message);
+      console.error('Raw response length:', response.length);
+      throw new Error('Failed to generate valid scene list. The response may be too long or malformed.');
+    }
+  }
+
+  /**
+   * Generate shot list for a scene
+   */
+  async generateShots(
+    sceneTitle: string,
+    sceneDescription: string,
+    voiceoverText?: string
+  ): Promise<Array<{
+    title: string;
+    description: string;
+    duration: number;
+    environment?: string;
+    subject?: string;
+    action?: string;
+    cameraMovement?: string;
+    lighting?: string;
+    style?: string;
+  }>> {
+    const messages: PoeMessage[] = [
+      {
+        role: 'system',
+        content: 'You are a TikTok/Douyin video director. You always respond with valid JSON arrays only. Keep everything ultra-concise for short-form vertical videos.',
+      },
+      {
+        role: 'user',
+        content: `Generate 2-3 shots for this scene in a short video (each shot 3-8 seconds). Keep it simple and punchy.
+
+Scene: ${sceneTitle}
+Description: ${sceneDescription}
+${voiceoverText ? `Voiceover: ${voiceoverText.substring(0, 150)}` : ''}
+
+Return ONLY a JSON array (no markdown, no explanation):
+[
+  {
+    "title": "Shot title (max 20 chars)",
+    "description": "Brief description (max 60 chars)",
+    "duration": 5,
+    "environment": "Location (max 40 chars)",
+    "subject": "Subject (max 40 chars)",
+    "action": "Action (max 50 chars)",
+    "cameraMovement": "static/pan/zoom",
+    "lighting": "Lighting (max 30 chars)",
+    "style": "TikTok/cinematic/vlog"
+  }
+]`,
+      },
+    ];
+
+    const response = await this.callPoeAPI(messages, 0.7, 4000);
+    
+    console.log('LLM response for shots (length: ' + response.length + '):', response.substring(0, 500) + '...');
+    
+    try {
+      // Try to extract JSON from response
+      // Remove markdown code blocks if present
+      let cleanedResponse = response.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      
+      // Try to find JSON array
+      const jsonMatch = cleanedResponse.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        let jsonStr = jsonMatch[0];
+        
+        // Check if JSON is truncated (doesn't end with proper closing)
+        if (!jsonStr.trim().endsWith(']')) {
+          console.warn('JSON appears truncated, attempting to fix...');
+          // Try to close the last object and array
+          const lastComma = jsonStr.lastIndexOf(',');
+          if (lastComma > 0) {
+            jsonStr = jsonStr.substring(0, lastComma) + ']';
+          }
+        }
+        
+        const parsed = JSON.parse(jsonStr);
+        console.log('Successfully parsed shots:', parsed.length, 'items');
+        return parsed;
+      }
+      
+      console.error('No JSON array found in response');
+      throw new Error('Failed to parse shot list from LLM response');
+    } catch (error: any) {
+      console.error('Failed to parse shot list:', error.message);
+      console.error('Raw response length:', response.length);
+      throw new Error('Failed to generate valid shot list. The response may be too long or malformed.');
+    }
   }
 
   /**

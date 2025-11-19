@@ -111,11 +111,17 @@ router.post('/config/validate/poe', async (req: Request, res: Response) => {
   try {
     const { apiKey, apiUrl } = req.body;
 
+    console.log('Received POE validation request:', {
+      hasApiKey: !!apiKey,
+      hasApiUrl: !!apiUrl,
+    });
+
     const result = await systemConfigService.validatePoeAPIConfig(apiKey, apiUrl);
 
     res.json(result);
   } catch (error: any) {
     console.error('Error validating Poe API config:', error);
+    console.error('Stack trace:', error.stack);
     sendError(res, 500, 'INTERNAL_ERROR', 'Failed to validate Poe API configuration');
   }
 });
